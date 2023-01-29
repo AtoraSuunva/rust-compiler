@@ -1,0 +1,52 @@
+// All valid
+function add(num1: integer, num2: integer) => integer {
+  return (num1 + num2);
+}
+
+/* Invalid ID, but the lexer should recover and manage to parse the rest OK */
+_bad_id = 123 / 1.23e+45;
+
+// Valid ID, but the int is invalid
+good_id = 0123 == my_var;
+
+// Invalid chars thrown in
+my_#var = resu&t + 34fe;
+
+// Should parse as [::, ::, :] if it's properly looking forwards
+:::::
+
+// Should parse as [<>, =], not [<, >=]
+<>=
+
+// Should parse as [<=, >]
+<=>
+
+// Should parse as [<, 123] if it backtracks correctly
+<123
+
+// The language is case-sensitive, these should be IDs
+INTEGER integeR IF localVar
+
+// Valid leading/trailing zeros
+1000
+12.0
+12.000056
+34.110e10
+
+// Invalid leading/trailing zeros, even if there's multiple
+01
+0000000000000001
+12.3450
+12.1234000
+123.0e-01
+123.0e+0000001
+123.00e-1
+
+// Block comment between two other valid tokens
+localvar my_var: integer /* TODO: fix this */ = 123
+
+/* Layer 1
+  /* Layer 2
+  */ Close layer 2, but not layer 1
+
+This is considered part of the multi-line comment above because we didn't match every /* with a */
