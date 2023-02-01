@@ -1,0 +1,26 @@
+// inline comment
+
+/* block comment */
+
+/* nested block
+  /* comment */
+*/
+
+123
+0123
+12.34
+012.34
+12.0
+12340
+12.34e56
+12.34e+56
+12.34e-56
+12.34e056
+
+identifier
+i_dentifier
+i123456789
+
+@#$%^&
+
+<>/==<=({}).:*::>=><=<+-[],;
