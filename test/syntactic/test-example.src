@@ -1,0 +1,35 @@
+class SQUARE isa SHAPE, THING {
+  private attribute width: float;
+  private attribute height: float;
+  public constructor: (width: float, height: float);
+  public function area: () => float;
+} // missing ; here
+
+function SQUARE::constructor(width: float, height: float) {
+  self.width = width;
+  self.height = height;
+}
+
+function SQUARE::area() => float {
+  localvar result: float;
+  result = width * height;
+  return (result);
+}
+
+function main() => void {
+  localvar square: SQUARE(2, 3);
+  localvar result: float;
+
+  result = square.area();
+  write(result);
+
+  while (i < 10) {
+    // Missing RELEXPR between ()
+    if () { // Missing `then` after ()
+      write(word);
+    } // missing `else;` after }
+
+    // Still, we should be able to recover
+    foo = bar;
+  };
+}

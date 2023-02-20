@@ -1,0 +1,88 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'lexdriver'",
+      "cargo": {
+        "args": ["build", "--bin=lexdriver", "--package=rust-compiler"],
+        "filter": {
+          "name": "lexdriver",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'lexdriver'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=lexdriver",
+          "--package=rust-compiler"
+        ],
+        "filter": {
+          "name": "lexdriver",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'syndriver'",
+      "cargo": {
+        "args": ["build", "--bin=syndriver", "--package=rust-compiler"],
+        "filter": {
+          "name": "syndriver",
+          "kind": "bin"
+        }
+      },
+      "args": ["./test/syntactic/test-example.src"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'syndriver'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=syndriver",
+          "--package=rust-compiler"
+        ],
+        "filter": {
+          "name": "syndriver",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'rust-compiler-lib'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=rust-compiler-lib"],
+        "filter": {
+          "name": "rust-compiler-lib",
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

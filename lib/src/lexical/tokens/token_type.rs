@@ -1,9 +1,13 @@
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    hash::{Hash, Hasher},
+};
 
 use super::error_type::ErrorType;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
+    EndOfFile,
     Id(String),
     IntNum(isize),
     FloatNum(f64),
@@ -85,6 +89,15 @@ impl Type {
             _ => Type::Id(str.to_string()),
         }
     }
+
+    pub fn empty_variant(&self) -> Type {
+        match self {
+            Type::Id(_) => Type::Id("".to_string()),
+            Type::IntNum(_) => Type::IntNum(0),
+            Type::FloatNum(_) => Type::FloatNum(0.0),
+            _ => self.clone(),
+        }
+    }
 }
 
 impl Display for Type {
@@ -93,6 +106,7 @@ impl Display for Type {
             f,
             "{}",
             match self {
+                Type::EndOfFile => "$",
                 Type::Id(_) => "id",
                 Type::IntNum(_) => "intnum",
                 Type::FloatNum(_) => "floatnum",
@@ -148,5 +162,19 @@ impl Display for Type {
                 }
             }
         )
+    }
+}
+
+impl PartialEq for Type {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_string() == other.to_string()
+    }
+}
+
+impl Eq for Type {}
+
+impl Hash for Type {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.to_string().hash(state);
     }
 }

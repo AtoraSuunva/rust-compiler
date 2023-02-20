@@ -1,0 +1,8 @@
+function main() => void {
+  // Perfectly fine
+  array[1][2][3] = 4;
+  // Indexing should have an [ARITHEXPR], not be empty []
+  number[][] = 1;
+  // But we should recover and keep parsing just fine
+  coolNumber[1 + num] = func().res[1].rep[i][j][k];
+}

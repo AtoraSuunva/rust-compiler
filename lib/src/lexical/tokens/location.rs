@@ -15,6 +15,6 @@ impl Location {
 impl Display for Location {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // TODO: display column, it's pretty funky when combined with tabs since editors decide how wide tabs are, so check how to best report it
-        write!(f, "{}", self.line)
+        write!(f, "line {}", self.line)
     }
 }

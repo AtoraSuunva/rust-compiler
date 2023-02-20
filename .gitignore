@@ -10,5 +10,7 @@ Cargo.lock
 **/*.rs.bk
 
 /bin/
-/test/*.outlextokens
-/test/*.outlexerrors
+/test/**/*.outlextokens
+/test/**/*.outlexerrors
+/test/**/*.outderivation
+/test/**/*.outsyntaxerrors

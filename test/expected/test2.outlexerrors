@@ -1,9 +1,0 @@
-Lexical error: Invalid leading zero: "0123": line 10
-Lexical error: Invalid leading zero: "012.34": line 12
-Lexical error: Invalid leading zero: "12.34e056": line 18
-Lexical error: Invalid character: "@": line 24
-Lexical error: Invalid character: "#": line 24
-Lexical error: Invalid character: "$": line 24
-Lexical error: Invalid character: "%": line 24
-Lexical error: Invalid character: "^": line 24
-Lexical error: Invalid character: "&": line 24
