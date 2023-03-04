@@ -20,11 +20,11 @@ impl Display for Production<'_> {
 // This should be a compile-time static collection but I don't wanna install any crates to see how far I can go
 pub fn get_first_set_table() -> HashMap<&'static str, Vec<Type>> {
     HashMap::from([
-        ("START", vec![Type::Class, Type::Function]),
-        ("ARRAYSIZETAIL", vec![Type::IntNum(0), Type::CloseSqbr]),
+        ("START", vec![Type::EndOfFile, Type::Class, Type::Function]),
+        ("ARRAYSIZE2", vec![Type::IntNum(0), Type::CloseSqbr]),
         ("CLASSDECL", vec![Type::Class]),
         (
-            "EXPRTAIL",
+            "EXPR2",
             vec![
                 Type::Eq,
                 Type::NotEq,
@@ -32,6 +32,36 @@ pub fn get_first_set_table() -> HashMap<&'static str, Vec<Type>> {
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
+            ],
+        ),
+        ("FACTOR2", vec![Type::OpenPar, Type::OpenSqbr]),
+        ("FUNCDEF", vec![Type::Function]),
+        ("FUNCBODY", vec![Type::OpenCubr]),
+        ("FUNCHEAD", vec![Type::Function]),
+        ("FUNCHEADTAIL", vec![Type::ScopeOp, Type::OpenPar]),
+        (
+            "FUNCHEADMEMBERTAIL",
+            vec![Type::Id("".to_owned()), Type::Constructor],
+        ),
+        ("IDNEST2", vec![Type::OpenPar, Type::OpenSqbr]),
+        ("ARRAYOROBJECT", vec![Type::OpenPar, Type::OpenSqbr]),
+        ("LOCALVARDECL", vec![Type::LocalVar]),
+        ("MEMBERFUNCDECL", vec![Type::Function, Type::Constructor]),
+        ("MEMBERFUNCHEAD", vec![Type::Function, Type::Constructor]),
+        ("FPARAMS", vec![Type::Id("".to_owned())]),
+        ("MEMBERVARDECL", vec![Type::Attribute]),
+        ("OPTINHERITS", vec![Type::IsA]),
+        ("PROG", vec![Type::Class, Type::Function]),
+        (
+            "ARITHEXPR",
+            vec![
+                Type::Id("".to_owned()),
+                Type::IntNum(0),
+                Type::FloatNum(0f64),
+                Type::OpenPar,
+                Type::Not,
+                Type::Plus,
+                Type::Minus,
             ],
         ),
         (
@@ -45,102 +75,48 @@ pub fn get_first_set_table() -> HashMap<&'static str, Vec<Type>> {
                 Type::GEq,
             ],
         ),
-        ("VARIABLE_OR_FUNCTIONCALL", vec![Type::Id("".to_owned())]),
-        ("FUNCDEF", vec![Type::Function]),
-        ("FUNCBODY", vec![Type::OpenCubr]),
-        ("FUNCHEAD", vec![Type::Function]),
-        ("FUNCHEADTAIL", vec![Type::OpenPar, Type::ScopeOp]),
-        ("FUNCHEADSR", vec![Type::ScopeOp]),
-        (
-            "FUNCHEADSRTAIL",
-            vec![Type::Id("".to_owned()), Type::Constructor],
-        ),
-        ("FUNCHEADPARAMS", vec![Type::OpenPar]),
-        ("OPT_CALL_OR_INDEXED", vec![Type::OpenPar, Type::OpenSqbr]),
-        ("INDICE", vec![Type::OpenSqbr]),
-        (
-            "ARITHEXPR",
-            vec![
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-                Type::Id("".to_owned()),
-            ],
-        ),
-        (
-            "LOCALVARDECLTAIL",
-            vec![Type::Semi, Type::OpenPar, Type::OpenSqbr],
-        ),
-        (
-            "APARAMS",
-            vec![
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-                Type::Id("".to_owned()),
-            ],
-        ),
-        ("LOCALVARDECL", vec![Type::LocalVar]),
-        ("MEMBERFUNCDECL", vec![Type::Function, Type::Constructor]),
-        ("FPARAMS", vec![Type::Id("".to_owned())]),
-        ("MEMBERVARDECL", vec![Type::Attribute]),
-        ("OPTCLASSDECL2", vec![Type::IsA]),
         ("APARAMSTAIL", vec![Type::Comma]),
         ("REPTAPARAMS1", vec![Type::Comma]),
-        (
-            "MEMBERDECL",
-            vec![Type::Function, Type::Constructor, Type::Attribute],
-        ),
-        (
-            "REPTCLASSDECL4",
-            vec![
-                Type::Public,
-                Type::Private,
-                Type::Function,
-                Type::Constructor,
-                Type::Attribute,
-            ],
-        ),
+        ("REPTARRAYSIZE", vec![Type::OpenSqbr]),
         ("REPTFPARAMS3", vec![Type::OpenSqbr]),
         ("FPARAMSTAIL", vec![Type::Comma]),
         ("REPTFPARAMS4", vec![Type::Comma]),
-        ("REPTFPARAMSTAIL4", vec![Type::OpenSqbr]),
-        (
-            "LOCALVARDECLORSTMT",
-            vec![
-                Type::LocalVar,
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-                Type::Id("".to_owned()),
-            ],
-        ),
-        (
-            "REPTFUNCBODY1",
-            vec![
-                Type::LocalVar,
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-                Type::Id("".to_owned()),
-            ],
-        ),
-        ("REPTLOCALVARDECL4", vec![Type::OpenSqbr]),
         ("ARRAYSIZE", vec![Type::OpenSqbr]),
-        ("REPTMEMBERVARDECL4", vec![Type::OpenSqbr]),
-        ("REPTOPTCLASSDECL22", vec![Type::Comma]),
+        ("REPTFPARAMSTAIL4", vec![Type::OpenSqbr]),
+        ("REPTINHERITSLIST", vec![Type::Comma]),
+        (
+            "LOCALVARORSTAT",
+            vec![
+                Type::LocalVar,
+                Type::Id("".to_owned()),
+                Type::If,
+                Type::While,
+                Type::Read,
+                Type::Write,
+                Type::Return,
+            ],
+        ),
+        (
+            "REPTLOCALVARORSTAT",
+            vec![
+                Type::LocalVar,
+                Type::Id("".to_owned()),
+                Type::If,
+                Type::While,
+                Type::Read,
+                Type::Write,
+                Type::Return,
+            ],
+        ),
+        (
+            "MEMBERDECL",
+            vec![Type::Attribute, Type::Function, Type::Constructor],
+        ),
+        ("REPTMEMBERDECL", vec![Type::Public, Type::Private]),
         ("CLASSDECLORFUNCDEF", vec![Type::Class, Type::Function]),
-        ("REPTSTART0", vec![Type::Class, Type::Function]),
+        ("REPTPROG0", vec![Type::Class, Type::Function]),
+        ("IDNEST", vec![Type::Dot]),
+        ("REPTVARIABLEORFUNCTIONCALL", vec![Type::Dot]),
         (
             "RETURNTYPE",
             vec![
@@ -157,92 +133,91 @@ pub fn get_first_set_table() -> HashMap<&'static str, Vec<Type>> {
         (
             "REPTSTATBLOCK1",
             vec![
+                Type::Id("".to_owned()),
                 Type::If,
                 Type::While,
                 Type::Read,
                 Type::Write,
                 Type::Return,
-                Type::Id("".to_owned()),
             ],
         ),
         (
             "STATEMENT",
             vec![
+                Type::Id("".to_owned()),
                 Type::If,
                 Type::While,
                 Type::Read,
                 Type::Write,
                 Type::Return,
-                Type::Id("".to_owned()),
             ],
         ),
         (
             "RELEXPR",
             vec![
+                Type::Id("".to_owned()),
                 Type::IntNum(0),
                 Type::FloatNum(0f64),
                 Type::OpenPar,
                 Type::Not,
                 Type::Plus,
                 Type::Minus,
-                Type::Id("".to_owned()),
             ],
         ),
         (
             "STATBLOCK",
             vec![
                 Type::OpenCubr,
+                Type::Id("".to_owned()),
                 Type::If,
                 Type::While,
                 Type::Read,
                 Type::Write,
                 Type::Return,
-                Type::Id("".to_owned()),
             ],
         ),
-        (
-            "ASSIGN_OR_FUNCTIONCALL_TAIL",
-            vec![Type::Dot, Type::OpenPar, Type::OpenSqbr, Type::Assign],
-        ),
-        ("CALL", vec![Type::OpenPar]),
-        ("AF_INDEXED_TAIL", vec![Type::Dot, Type::Assign]),
+        ("INDICE", vec![Type::OpenSqbr]),
+        ("STATEMENTIDNEST2", vec![Type::Dot]),
+        ("STATEMENTIDNEST3", vec![Type::Dot, Type::Assign]),
         ("ASSIGNOP", vec![Type::Assign]),
         (
             "EXPR",
             vec![
+                Type::Id("".to_owned()),
                 Type::IntNum(0),
                 Type::FloatNum(0f64),
                 Type::OpenPar,
                 Type::Not,
                 Type::Plus,
                 Type::Minus,
-                Type::Id("".to_owned()),
             ],
         ),
-        ("AF_CALL_TAIL", vec![Type::Dot]),
-        ("ASSIGN_OR_FUNCTIONCALL", vec![Type::Id("".to_owned())]),
+        (
+            "STATEMENTIDNEST",
+            vec![Type::Dot, Type::OpenPar, Type::OpenSqbr, Type::Assign],
+        ),
         (
             "TERM",
             vec![
+                Type::Id("".to_owned()),
                 Type::IntNum(0),
                 Type::FloatNum(0f64),
                 Type::OpenPar,
                 Type::Not,
                 Type::Plus,
                 Type::Minus,
-                Type::Id("".to_owned()),
             ],
         ),
         (
             "FACTOR",
             vec![
+                Type::Id("".to_owned()),
                 Type::IntNum(0),
                 Type::FloatNum(0f64),
                 Type::OpenPar,
                 Type::Not,
                 Type::Plus,
                 Type::Minus,
-                Type::Id("".to_owned()),
             ],
         ),
         ("RIGHTRECTERM", vec![Type::Mult, Type::Div, Type::And]),
@@ -251,9 +226,23 @@ pub fn get_first_set_table() -> HashMap<&'static str, Vec<Type>> {
             vec![Type::Integer, Type::Float, Type::Id("".to_owned())],
         ),
         ("VARIABLE", vec![Type::Id("".to_owned())]),
-        ("CALL_OR_INDEXED_ID", vec![Type::Id("".to_owned())]),
-        ("REP_CI_ID0", vec![Type::Dot]),
-        ("INDEXED", vec![Type::OpenSqbr]),
+        ("VARIABLE2", vec![Type::OpenPar, Type::OpenSqbr, Type::Dot]),
+        ("REPTVARIABLE", vec![Type::Dot]),
+        ("VARIDNEST2", vec![Type::OpenPar, Type::OpenSqbr]),
+        (
+            "APARAMS",
+            vec![
+                Type::Id("".to_owned()),
+                Type::IntNum(0),
+                Type::FloatNum(0f64),
+                Type::OpenPar,
+                Type::Not,
+                Type::Plus,
+                Type::Minus,
+            ],
+        ),
+        ("VARIDNEST", vec![Type::Dot]),
+        ("REPTIDNEST1", vec![Type::OpenSqbr]),
         ("VISIBILITY", vec![Type::Public, Type::Private]),
     ])
 }
@@ -262,37 +251,29 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
     HashMap::from([
         ("START", vec![]),
         (
-            "ARRAYSIZETAIL",
+            "ARRAYSIZE2",
             vec![Type::OpenSqbr, Type::Semi, Type::ClosePar, Type::Comma],
         ),
-        ("CLASSDECL", vec![Type::Class, Type::Function]),
-        ("EXPRTAIL", vec![Type::Semi, Type::Comma, Type::ClosePar]),
         (
-            "RELOP",
-            vec![
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-                Type::Id("".to_owned()),
-            ],
+            "CLASSDECL",
+            vec![Type::Class, Type::Function, Type::EndOfFile],
         ),
+        ("EXPR2", vec![Type::Semi, Type::Comma, Type::ClosePar]),
         (
-            "VARIABLE_OR_FUNCTIONCALL",
+            "FACTOR2",
             vec![
                 Type::Semi,
                 Type::Mult,
                 Type::Div,
                 Type::And,
+                Type::Dot,
+                Type::CloseSqbr,
                 Type::Eq,
                 Type::NotEq,
                 Type::Lt,
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
-                Type::CloseSqbr,
                 Type::Plus,
                 Type::Minus,
                 Type::Or,
@@ -300,29 +281,32 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
                 Type::ClosePar,
             ],
         ),
-        ("FUNCDEF", vec![Type::Class, Type::Function]),
-        ("FUNCBODY", vec![Type::Class, Type::Function]),
+        (
+            "FUNCDEF",
+            vec![Type::Class, Type::Function, Type::EndOfFile],
+        ),
+        (
+            "FUNCBODY",
+            vec![Type::Class, Type::Function, Type::EndOfFile],
+        ),
         ("FUNCHEAD", vec![Type::OpenCubr]),
         ("FUNCHEADTAIL", vec![Type::OpenCubr]),
-        ("FUNCHEADSR", vec![Type::OpenCubr]),
-        ("FUNCHEADSRTAIL", vec![Type::OpenCubr]),
-        ("FUNCHEADPARAMS", vec![Type::ReturnType, Type::OpenCubr]),
+        ("FUNCHEADMEMBERTAIL", vec![Type::OpenCubr]),
         (
-            "OPT_CALL_OR_INDEXED",
+            "IDNEST2",
             vec![
                 Type::Semi,
                 Type::Mult,
                 Type::Div,
                 Type::And,
                 Type::Dot,
-                Type::Id("".to_owned()),
+                Type::CloseSqbr,
                 Type::Eq,
                 Type::NotEq,
                 Type::Lt,
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
-                Type::CloseSqbr,
                 Type::Plus,
                 Type::Minus,
                 Type::Or,
@@ -330,162 +314,162 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
                 Type::ClosePar,
             ],
         ),
-        (
-            "INDICE",
-            vec![
-                Type::Assign,
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::OpenSqbr,
-                Type::Dot,
-                Type::Id("".to_owned()),
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::CloseSqbr,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "ARITHEXPR",
-            vec![
-                Type::Semi,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::CloseSqbr,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "LOCALVARDECLTAIL",
-            vec![
-                Type::LocalVar,
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-                Type::Id("".to_owned()),
-                Type::CloseCubr,
-            ],
-        ),
-        ("APARAMS", vec![Type::ClosePar]),
+        ("ARRAYOROBJECT", vec![Type::Semi]),
         (
             "LOCALVARDECL",
             vec![
                 Type::LocalVar,
+                Type::Id("".to_owned()),
                 Type::If,
                 Type::While,
                 Type::Read,
                 Type::Write,
                 Type::Return,
-                Type::Id("".to_owned()),
                 Type::CloseCubr,
             ],
         ),
         (
             "MEMBERFUNCDECL",
-            vec![
-                Type::Public,
-                Type::Private,
-                Type::Function,
-                Type::Constructor,
-                Type::Attribute,
-                Type::CloseCubr,
-            ],
+            vec![Type::Public, Type::Private, Type::CloseCubr],
         ),
+        ("MEMBERFUNCHEAD", vec![Type::Semi]),
         ("FPARAMS", vec![Type::ClosePar]),
         (
             "MEMBERVARDECL",
+            vec![Type::Public, Type::Private, Type::CloseCubr],
+        ),
+        ("OPTINHERITS", vec![Type::OpenCubr]),
+        ("PROG", vec![Type::EndOfFile]),
+        (
+            "ARITHEXPR",
             vec![
-                Type::Public,
-                Type::Private,
-                Type::Function,
-                Type::Constructor,
-                Type::Attribute,
-                Type::CloseCubr,
+                Type::Semi,
+                Type::CloseSqbr,
+                Type::Eq,
+                Type::NotEq,
+                Type::Lt,
+                Type::Gt,
+                Type::LEq,
+                Type::GEq,
+                Type::Comma,
+                Type::ClosePar,
             ],
         ),
-        ("OPTCLASSDECL2", vec![Type::OpenCubr]),
-        ("APARAMSTAIL", vec![Type::Comma, Type::ClosePar]),
-        ("REPTAPARAMS1", vec![Type::ClosePar]),
         (
-            "MEMBERDECL",
+            "RELOP",
             vec![
-                Type::Public,
-                Type::Private,
-                Type::Function,
-                Type::Constructor,
-                Type::Attribute,
-                Type::CloseCubr,
-            ],
-        ),
-        ("REPTCLASSDECL4", vec![Type::CloseCubr]),
-        ("REPTFPARAMS3", vec![Type::ClosePar, Type::Comma]),
-        ("FPARAMSTAIL", vec![Type::Comma, Type::ClosePar]),
-        ("REPTFPARAMS4", vec![Type::ClosePar]),
-        ("REPTFPARAMSTAIL4", vec![Type::Comma, Type::ClosePar]),
-        (
-            "LOCALVARDECLORSTMT",
-            vec![
-                Type::LocalVar,
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
                 Type::Id("".to_owned()),
-                Type::CloseCubr,
-            ],
-        ),
-        ("REPTFUNCBODY1", vec![Type::CloseCubr]),
-        ("REPTLOCALVARDECL4", vec![Type::Semi]),
-        (
-            "ARRAYSIZE",
-            vec![Type::OpenSqbr, Type::Semi, Type::ClosePar, Type::Comma],
-        ),
-        ("REPTMEMBERVARDECL4", vec![Type::Semi]),
-        ("REPTOPTCLASSDECL22", vec![Type::OpenCubr]),
-        ("CLASSDECLORFUNCDEF", vec![Type::Class, Type::Function]),
-        ("REPTSTART0", vec![]),
-        ("RETURNTYPE", vec![Type::Semi, Type::OpenCubr]),
-        (
-            "ADDOP",
-            vec![
                 Type::IntNum(0),
                 Type::FloatNum(0f64),
                 Type::OpenPar,
                 Type::Not,
                 Type::Plus,
                 Type::Minus,
+            ],
+        ),
+        ("APARAMSTAIL", vec![Type::Comma, Type::ClosePar]),
+        ("REPTAPARAMS1", vec![Type::ClosePar]),
+        ("REPTARRAYSIZE", vec![Type::Semi]),
+        ("REPTFPARAMS3", vec![Type::ClosePar, Type::Comma]),
+        ("FPARAMSTAIL", vec![Type::Comma, Type::ClosePar]),
+        ("REPTFPARAMS4", vec![Type::ClosePar]),
+        (
+            "ARRAYSIZE",
+            vec![Type::OpenSqbr, Type::Semi, Type::ClosePar, Type::Comma],
+        ),
+        ("REPTFPARAMSTAIL4", vec![Type::Comma, Type::ClosePar]),
+        ("REPTINHERITSLIST", vec![Type::OpenCubr]),
+        (
+            "LOCALVARORSTAT",
+            vec![
+                Type::LocalVar,
                 Type::Id("".to_owned()),
+                Type::If,
+                Type::While,
+                Type::Read,
+                Type::Write,
+                Type::Return,
+                Type::CloseCubr,
+            ],
+        ),
+        ("REPTLOCALVARORSTAT", vec![Type::CloseCubr]),
+        (
+            "MEMBERDECL",
+            vec![Type::Public, Type::Private, Type::CloseCubr],
+        ),
+        ("REPTMEMBERDECL", vec![Type::CloseCubr]),
+        (
+            "CLASSDECLORFUNCDEF",
+            vec![Type::Class, Type::Function, Type::EndOfFile],
+        ),
+        ("REPTPROG0", vec![Type::EndOfFile]),
+        (
+            "IDNEST",
+            vec![
+                Type::Semi,
+                Type::Mult,
+                Type::Div,
+                Type::And,
+                Type::Dot,
+                Type::CloseSqbr,
+                Type::Eq,
+                Type::NotEq,
+                Type::Lt,
+                Type::Gt,
+                Type::LEq,
+                Type::GEq,
+                Type::Plus,
+                Type::Minus,
+                Type::Or,
+                Type::Comma,
+                Type::ClosePar,
+            ],
+        ),
+        (
+            "REPTVARIABLEORFUNCTIONCALL",
+            vec![
+                Type::Semi,
+                Type::Mult,
+                Type::Div,
+                Type::And,
+                Type::CloseSqbr,
+                Type::Eq,
+                Type::NotEq,
+                Type::Lt,
+                Type::Gt,
+                Type::LEq,
+                Type::GEq,
+                Type::Plus,
+                Type::Minus,
+                Type::Or,
+                Type::Comma,
+                Type::ClosePar,
+            ],
+        ),
+        ("RETURNTYPE", vec![Type::Semi, Type::OpenCubr]),
+        (
+            "ADDOP",
+            vec![
+                Type::Id("".to_owned()),
+                Type::IntNum(0),
+                Type::FloatNum(0f64),
+                Type::OpenPar,
+                Type::Not,
+                Type::Plus,
+                Type::Minus,
             ],
         ),
         (
             "RIGHTRECARITHEXPR",
             vec![
                 Type::Semi,
+                Type::CloseSqbr,
                 Type::Eq,
                 Type::NotEq,
                 Type::Lt,
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
-                Type::CloseSqbr,
                 Type::Comma,
                 Type::ClosePar,
             ],
@@ -493,25 +477,25 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
         (
             "MULTOP",
             vec![
+                Type::Id("".to_owned()),
                 Type::IntNum(0),
                 Type::FloatNum(0f64),
                 Type::OpenPar,
                 Type::Not,
                 Type::Plus,
                 Type::Minus,
-                Type::Id("".to_owned()),
             ],
         ),
         (
             "SIGN",
             vec![
+                Type::Id("".to_owned()),
                 Type::IntNum(0),
                 Type::FloatNum(0f64),
                 Type::OpenPar,
                 Type::Not,
                 Type::Plus,
                 Type::Minus,
-                Type::Id("".to_owned()),
             ],
         ),
         ("REPTSTATBLOCK1", vec![Type::CloseCubr]),
@@ -521,34 +505,34 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
                 Type::Else,
                 Type::Semi,
                 Type::LocalVar,
+                Type::Id("".to_owned()),
                 Type::If,
                 Type::While,
                 Type::Read,
                 Type::Write,
                 Type::Return,
-                Type::Id("".to_owned()),
                 Type::CloseCubr,
             ],
         ),
         ("RELEXPR", vec![Type::ClosePar]),
         ("STATBLOCK", vec![Type::Else, Type::Semi]),
-        ("ASSIGN_OR_FUNCTIONCALL_TAIL", vec![Type::Semi]),
         (
-            "CALL",
+            "INDICE",
             vec![
                 Type::Semi,
                 Type::Mult,
                 Type::Div,
                 Type::And,
+                Type::OpenSqbr,
+                Type::Assign,
                 Type::Dot,
-                Type::Id("".to_owned()),
+                Type::CloseSqbr,
                 Type::Eq,
                 Type::NotEq,
                 Type::Lt,
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
-                Type::CloseSqbr,
                 Type::Plus,
                 Type::Minus,
                 Type::Or,
@@ -556,33 +540,33 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
                 Type::ClosePar,
             ],
         ),
-        ("AF_INDEXED_TAIL", vec![Type::Semi]),
+        ("STATEMENTIDNEST2", vec![Type::Semi]),
+        ("STATEMENTIDNEST3", vec![Type::Semi]),
         (
             "ASSIGNOP",
             vec![
+                Type::Id("".to_owned()),
                 Type::IntNum(0),
                 Type::FloatNum(0f64),
                 Type::OpenPar,
                 Type::Not,
                 Type::Plus,
                 Type::Minus,
-                Type::Id("".to_owned()),
             ],
         ),
         ("EXPR", vec![Type::Semi, Type::Comma, Type::ClosePar]),
-        ("AF_CALL_TAIL", vec![Type::Semi]),
-        ("ASSIGN_OR_FUNCTIONCALL", vec![Type::Semi]),
+        ("STATEMENTIDNEST", vec![Type::Semi]),
         (
             "TERM",
             vec![
                 Type::Semi,
+                Type::CloseSqbr,
                 Type::Eq,
                 Type::NotEq,
                 Type::Lt,
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
-                Type::CloseSqbr,
                 Type::Plus,
                 Type::Minus,
                 Type::Or,
@@ -597,13 +581,13 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
                 Type::Mult,
                 Type::Div,
                 Type::And,
+                Type::CloseSqbr,
                 Type::Eq,
                 Type::NotEq,
                 Type::Lt,
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
-                Type::CloseSqbr,
                 Type::Plus,
                 Type::Minus,
                 Type::Or,
@@ -615,13 +599,13 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
             "RIGHTRECTERM",
             vec![
                 Type::Semi,
+                Type::CloseSqbr,
                 Type::Eq,
                 Type::NotEq,
                 Type::Lt,
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
-                Type::CloseSqbr,
                 Type::Plus,
                 Type::Minus,
                 Type::Or,
@@ -641,53 +625,13 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
             ],
         ),
         ("VARIABLE", vec![Type::ClosePar]),
+        ("VARIABLE2", vec![Type::ClosePar]),
+        ("REPTVARIABLE", vec![Type::ClosePar]),
+        ("VARIDNEST2", vec![Type::ClosePar, Type::Dot]),
+        ("APARAMS", vec![Type::ClosePar]),
+        ("VARIDNEST", vec![Type::ClosePar, Type::Dot]),
         (
-            "CALL_OR_INDEXED_ID",
-            vec![
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::Dot,
-                Type::Id("".to_owned()),
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::CloseSqbr,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "REP_CI_ID0",
-            vec![
-                Type::Id("".to_owned()),
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::CloseSqbr,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "INDEXED",
+            "REPTIDNEST1",
             vec![
                 Type::Assign,
                 Type::Semi,
@@ -695,14 +639,13 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
                 Type::Div,
                 Type::And,
                 Type::Dot,
-                Type::Id("".to_owned()),
+                Type::CloseSqbr,
                 Type::Eq,
                 Type::NotEq,
                 Type::Lt,
                 Type::Gt,
                 Type::LEq,
                 Type::GEq,
-                Type::CloseSqbr,
                 Type::Plus,
                 Type::Minus,
                 Type::Or,
@@ -712,7 +655,7 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
         ),
         (
             "VISIBILITY",
-            vec![Type::Function, Type::Constructor, Type::Attribute],
+            vec![Type::Attribute, Type::Function, Type::Constructor],
         ),
     ])
 }
@@ -720,30 +663,39 @@ pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
 pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'static>>> {
     HashMap::from([
         (
-            ("START", Type::EndOfFile),
-            vec![Production::NonTerm("REPTSTART0")],
-        ),
-        (
             ("START", Type::Function),
-            vec![Production::NonTerm("REPTSTART0")],
+            vec![
+                Production::NonTerm("PROG"),
+                // Production::Term(Type::EndOfFile),
+            ],
         ),
         (
             ("START", Type::Class),
-            vec![Production::NonTerm("REPTSTART0")],
+            vec![
+                Production::NonTerm("PROG"),
+                // Production::Term(Type::EndOfFile),
+            ],
+        ),
+        (
+            ("START", Type::EndOfFile),
+            vec![
+                Production::NonTerm("PROG"),
+                Production::Term(Type::EndOfFile),
+            ],
         ),
         (("ADDOP", Type::Minus), vec![Production::Term(Type::Minus)]),
         (("ADDOP", Type::Plus), vec![Production::Term(Type::Plus)]),
         (("ADDOP", Type::Or), vec![Production::Term(Type::Or)]),
+        (("APARAMS", Type::ClosePar), vec![]),
         (
-            ("APARAMS", Type::Id("".to_owned())),
+            ("APARAMS", Type::OpenPar),
             vec![
                 Production::NonTerm("EXPR"),
                 Production::NonTerm("REPTAPARAMS1"),
             ],
         ),
-        (("APARAMS", Type::ClosePar), vec![]),
         (
-            ("APARAMS", Type::OpenPar),
+            ("APARAMS", Type::Id("".to_owned())),
             vec![
                 Production::NonTerm("EXPR"),
                 Production::NonTerm("REPTAPARAMS1"),
@@ -789,14 +741,14 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![Production::Term(Type::Comma), Production::NonTerm("EXPR")],
         ),
         (
-            ("ARITHEXPR", Type::Id("".to_owned())),
+            ("ARITHEXPR", Type::OpenPar),
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
             ],
         ),
         (
-            ("ARITHEXPR", Type::OpenPar),
+            ("ARITHEXPR", Type::Id("".to_owned())),
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
@@ -838,18 +790,34 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (
-            ("ARRAYSIZE", Type::OpenSqbr),
+            ("ARRAYOROBJECT", Type::OpenPar),
             vec![
-                Production::Term(Type::OpenSqbr),
-                Production::NonTerm("ARRAYSIZETAIL"),
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("APARAMS"),
+                Production::Term(Type::ClosePar),
             ],
         ),
         (
-            ("ARRAYSIZETAIL", Type::CloseSqbr),
+            ("ARRAYOROBJECT", Type::Semi),
+            vec![Production::NonTerm("REPTARRAYSIZE")],
+        ),
+        (
+            ("ARRAYOROBJECT", Type::OpenSqbr),
+            vec![Production::NonTerm("REPTARRAYSIZE")],
+        ),
+        (
+            ("ARRAYSIZE", Type::OpenSqbr),
+            vec![
+                Production::Term(Type::OpenSqbr),
+                Production::NonTerm("ARRAYSIZE2"),
+            ],
+        ),
+        (
+            ("ARRAYSIZE2", Type::CloseSqbr),
             vec![Production::Term(Type::CloseSqbr)],
         ),
         (
-            ("ARRAYSIZETAIL", Type::IntNum(0)),
+            ("ARRAYSIZE2", Type::IntNum(0)),
             vec![
                 Production::Term(Type::IntNum(0)),
                 Production::Term(Type::CloseSqbr),
@@ -864,9 +832,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Term(Type::Class),
                 Production::Term(Type::Id("".to_owned())),
-                Production::NonTerm("OPTCLASSDECL2"),
+                Production::NonTerm("OPTINHERITS"),
                 Production::Term(Type::OpenCubr),
-                Production::NonTerm("REPTCLASSDECL4"),
+                Production::NonTerm("REPTMEMBERDECL"),
                 Production::Term(Type::CloseCubr),
                 Production::Term(Type::Semi),
             ],
@@ -880,109 +848,525 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![Production::NonTerm("CLASSDECL")],
         ),
         (
-            ("EXPR", Type::Id("".to_owned())),
-            vec![
-                Production::NonTerm("ARITHEXPR"),
-                Production::NonTerm("EXPRTAIL"),
-            ],
-        ),
-        (
             ("EXPR", Type::OpenPar),
             vec![
                 Production::NonTerm("ARITHEXPR"),
-                Production::NonTerm("EXPRTAIL"),
+                Production::NonTerm("EXPR2"),
+            ],
+        ),
+        (
+            ("EXPR", Type::Id("".to_owned())),
+            vec![
+                Production::NonTerm("ARITHEXPR"),
+                Production::NonTerm("EXPR2"),
             ],
         ),
         (
             ("EXPR", Type::Minus),
             vec![
                 Production::NonTerm("ARITHEXPR"),
-                Production::NonTerm("EXPRTAIL"),
+                Production::NonTerm("EXPR2"),
             ],
         ),
         (
             ("EXPR", Type::Plus),
             vec![
                 Production::NonTerm("ARITHEXPR"),
-                Production::NonTerm("EXPRTAIL"),
+                Production::NonTerm("EXPR2"),
             ],
         ),
         (
             ("EXPR", Type::Not),
             vec![
                 Production::NonTerm("ARITHEXPR"),
-                Production::NonTerm("EXPRTAIL"),
+                Production::NonTerm("EXPR2"),
             ],
         ),
         (
             ("EXPR", Type::FloatNum(0f64)),
             vec![
                 Production::NonTerm("ARITHEXPR"),
-                Production::NonTerm("EXPRTAIL"),
+                Production::NonTerm("EXPR2"),
             ],
         ),
         (
             ("EXPR", Type::IntNum(0)),
             vec![
                 Production::NonTerm("ARITHEXPR"),
-                Production::NonTerm("EXPRTAIL"),
+                Production::NonTerm("EXPR2"),
             ],
         ),
-        (("EXPRTAIL", Type::Semi), vec![]),
-        (("EXPRTAIL", Type::ClosePar), vec![]),
-        (("EXPRTAIL", Type::Comma), vec![]),
+        (("EXPR2", Type::ClosePar), vec![]),
+        (("EXPR2", Type::Semi), vec![]),
+        (("EXPR2", Type::Comma), vec![]),
         (
-            ("EXPRTAIL", Type::GEq),
+            ("EXPR2", Type::GEq),
             vec![
                 Production::NonTerm("RELOP"),
                 Production::NonTerm("ARITHEXPR"),
             ],
         ),
         (
-            ("EXPRTAIL", Type::LEq),
+            ("EXPR2", Type::LEq),
             vec![
                 Production::NonTerm("RELOP"),
                 Production::NonTerm("ARITHEXPR"),
             ],
         ),
         (
-            ("EXPRTAIL", Type::Gt),
+            ("EXPR2", Type::Gt),
             vec![
                 Production::NonTerm("RELOP"),
                 Production::NonTerm("ARITHEXPR"),
             ],
         ),
         (
-            ("EXPRTAIL", Type::Lt),
+            ("EXPR2", Type::Lt),
             vec![
                 Production::NonTerm("RELOP"),
                 Production::NonTerm("ARITHEXPR"),
             ],
         ),
         (
-            ("EXPRTAIL", Type::NotEq),
+            ("EXPR2", Type::NotEq),
             vec![
                 Production::NonTerm("RELOP"),
                 Production::NonTerm("ARITHEXPR"),
             ],
         ),
         (
-            ("EXPRTAIL", Type::Eq),
+            ("EXPR2", Type::Eq),
             vec![
+                Production::NonTerm("RELOP"),
+                Production::NonTerm("ARITHEXPR"),
+            ],
+        ),
+        (
+            ("FACTOR", Type::OpenPar),
+            vec![
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("ARITHEXPR"),
+                Production::Term(Type::ClosePar),
+            ],
+        ),
+        (
+            ("FACTOR", Type::Id("".to_owned())),
+            vec![
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("FACTOR2"),
+                Production::NonTerm("REPTVARIABLEORFUNCTIONCALL"),
+            ],
+        ),
+        (
+            ("FACTOR", Type::Minus),
+            vec![Production::NonTerm("SIGN"), Production::NonTerm("FACTOR")],
+        ),
+        (
+            ("FACTOR", Type::Plus),
+            vec![Production::NonTerm("SIGN"), Production::NonTerm("FACTOR")],
+        ),
+        (
+            ("FACTOR", Type::Not),
+            vec![Production::Term(Type::Not), Production::NonTerm("FACTOR")],
+        ),
+        (
+            ("FACTOR", Type::FloatNum(0f64)),
+            vec![Production::Term(Type::FloatNum(0f64))],
+        ),
+        (
+            ("FACTOR", Type::IntNum(0)),
+            vec![Production::Term(Type::IntNum(0))],
+        ),
+        (
+            ("FACTOR2", Type::ClosePar),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::OpenPar),
+            vec![
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("APARAMS"),
+                Production::Term(Type::ClosePar),
+            ],
+        ),
+        (
+            ("FACTOR2", Type::Dot),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Semi),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Minus),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Plus),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Comma),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::GEq),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::LEq),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Gt),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Lt),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::NotEq),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Eq),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::And),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Div),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Mult),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::CloseSqbr),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::OpenSqbr),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("FACTOR2", Type::Or),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (("FPARAMS", Type::ClosePar), vec![]),
+        (
+            ("FPARAMS", Type::Id("".to_owned())),
+            vec![
+                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Colon),
+                Production::NonTerm("TYPE"),
+                Production::NonTerm("REPTFPARAMS3"),
+                Production::NonTerm("REPTFPARAMS4"),
+            ],
+        ),
+        (
+            ("FPARAMSTAIL", Type::Comma),
+            vec![
+                Production::Term(Type::Comma),
+                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Colon),
+                Production::NonTerm("TYPE"),
+                Production::NonTerm("REPTFPARAMSTAIL4"),
+            ],
+        ),
+        (
+            ("FUNCBODY", Type::OpenCubr),
+            vec![
+                Production::Term(Type::OpenCubr),
+                Production::NonTerm("REPTLOCALVARORSTAT"),
+                Production::Term(Type::CloseCubr),
+            ],
+        ),
+        (
+            ("FUNCDEF", Type::Function),
+            vec![
+                Production::NonTerm("FUNCHEAD"),
+                Production::NonTerm("FUNCBODY"),
+            ],
+        ),
+        (
+            ("FUNCHEAD", Type::Function),
+            vec![
+                Production::Term(Type::Function),
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("FUNCHEADTAIL"),
+            ],
+        ),
+        (
+            ("FUNCHEADMEMBERTAIL", Type::Id("".to_owned())),
+            vec![
+                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("FPARAMS"),
+                Production::Term(Type::ClosePar),
+                Production::Term(Type::ReturnType),
+                Production::NonTerm("RETURNTYPE"),
+            ],
+        ),
+        (
+            ("FUNCHEADMEMBERTAIL", Type::Constructor),
+            vec![
+                Production::Term(Type::Constructor),
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("FPARAMS"),
+                Production::Term(Type::ClosePar),
+            ],
+        ),
+        (
+            ("FUNCHEADTAIL", Type::OpenPar),
+            vec![
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("FPARAMS"),
+                Production::Term(Type::ClosePar),
+                Production::Term(Type::ReturnType),
+                Production::NonTerm("RETURNTYPE"),
+            ],
+        ),
+        (
+            ("FUNCHEADTAIL", Type::ScopeOp),
+            vec![
+                Production::Term(Type::ScopeOp),
+                Production::NonTerm("FUNCHEADMEMBERTAIL"),
+            ],
+        ),
+        (
+            ("IDNEST", Type::Dot),
+            vec![
+                Production::Term(Type::Dot),
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("IDNEST2"),
+            ],
+        ),
+        (
+            ("IDNEST2", Type::ClosePar),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::OpenPar),
+            vec![
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("APARAMS"),
+                Production::Term(Type::ClosePar),
+            ],
+        ),
+        (
+            ("IDNEST2", Type::Dot),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Semi),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Minus),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Plus),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Comma),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::GEq),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::LEq),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Gt),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Lt),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::NotEq),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Eq),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::And),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Div),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Mult),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::CloseSqbr),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::OpenSqbr),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("IDNEST2", Type::Or),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("INDICE", Type::OpenSqbr),
+            vec![
+                Production::Term(Type::OpenSqbr),
+                Production::NonTerm("ARITHEXPR"),
+                Production::Term(Type::CloseSqbr),
+            ],
+        ),
+        (
+            ("LOCALVARDECL", Type::LocalVar),
+            vec![
+                Production::Term(Type::LocalVar),
+                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Colon),
+                Production::NonTerm("TYPE"),
+                Production::NonTerm("ARRAYOROBJECT"),
+                Production::Term(Type::Semi),
+            ],
+        ),
+        (
+            ("LOCALVARORSTAT", Type::Id("".to_owned())),
+            vec![Production::NonTerm("STATEMENT")],
+        ),
+        (
+            ("LOCALVARORSTAT", Type::Return),
+            vec![Production::NonTerm("STATEMENT")],
+        ),
+        (
+            ("LOCALVARORSTAT", Type::Write),
+            vec![Production::NonTerm("STATEMENT")],
+        ),
+        (
+            ("LOCALVARORSTAT", Type::Read),
+            vec![Production::NonTerm("STATEMENT")],
+        ),
+        (
+            ("LOCALVARORSTAT", Type::While),
+            vec![Production::NonTerm("STATEMENT")],
+        ),
+        (
+            ("LOCALVARORSTAT", Type::If),
+            vec![Production::NonTerm("STATEMENT")],
+        ),
+        (
+            ("LOCALVARORSTAT", Type::LocalVar),
+            vec![Production::NonTerm("LOCALVARDECL")],
+        ),
+        (
+            ("MEMBERDECL", Type::Attribute),
+            vec![Production::NonTerm("MEMBERVARDECL")],
+        ),
+        (
+            ("MEMBERDECL", Type::Constructor),
+            vec![Production::NonTerm("MEMBERFUNCDECL")],
+        ),
+        (
+            ("MEMBERDECL", Type::Function),
+            vec![Production::NonTerm("MEMBERFUNCDECL")],
+        ),
+        (
+            ("MEMBERFUNCDECL", Type::Constructor),
+            vec![
+                Production::NonTerm("MEMBERFUNCHEAD"),
+                Production::Term(Type::Semi),
+            ],
+        ),
+        (
+            ("MEMBERFUNCDECL", Type::Function),
+            vec![
+                Production::NonTerm("MEMBERFUNCHEAD"),
+                Production::Term(Type::Semi),
+            ],
+        ),
+        (
+            ("MEMBERFUNCHEAD", Type::Constructor),
+            vec![
+                Production::Term(Type::Constructor),
+                Production::Term(Type::Colon),
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("FPARAMS"),
+                Production::Term(Type::ClosePar),
+            ],
+        ),
+        (
+            ("MEMBERFUNCHEAD", Type::Function),
+            vec![
+                Production::Term(Type::Function),
+                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Colon),
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("FPARAMS"),
+                Production::Term(Type::ClosePar),
+                Production::Term(Type::ReturnType),
+                Production::NonTerm("RETURNTYPE"),
+            ],
+        ),
+        (
+            ("MEMBERVARDECL", Type::Attribute),
+            vec![
+                Production::Term(Type::Attribute),
+                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Colon),
+                Production::NonTerm("TYPE"),
+                Production::NonTerm("REPTARRAYSIZE"),
+                Production::Term(Type::Semi),
+            ],
+        ),
+        (("MULTOP", Type::And), vec![Production::Term(Type::And)]),
+        (("MULTOP", Type::Div), vec![Production::Term(Type::Div)]),
+        (("MULTOP", Type::Mult), vec![Production::Term(Type::Mult)]),
+        (("OPTINHERITS", Type::OpenCubr), vec![]),
+        (
+            ("OPTINHERITS", Type::IsA),
+            vec![
+                Production::Term(Type::IsA),
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("REPTINHERITSLIST"),
+            ],
+        ),
+        (
+            ("PROG", Type::Function),
+            vec![Production::NonTerm("REPTPROG0")],
+        ),
+        (
+            ("PROG", Type::Class),
+            vec![Production::NonTerm("REPTPROG0")],
+        ),
+        (
+            ("PROG", Type::EndOfFile),
+            vec![Production::NonTerm("REPTPROG0")],
+        ),
+        (
+            ("RELEXPR", Type::OpenPar),
+            vec![
+                Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
                 Production::NonTerm("ARITHEXPR"),
             ],
         ),
         (
             ("RELEXPR", Type::Id("".to_owned())),
-            vec![
-                Production::NonTerm("ARITHEXPR"),
-                Production::NonTerm("RELOP"),
-                Production::NonTerm("ARITHEXPR"),
-            ],
-        ),
-        (
-            ("RELEXPR", Type::OpenPar),
             vec![
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
@@ -1035,407 +1419,6 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (("RELOP", Type::Lt), vec![Production::Term(Type::Lt)]),
         (("RELOP", Type::NotEq), vec![Production::Term(Type::NotEq)]),
         (("RELOP", Type::Eq), vec![Production::Term(Type::Eq)]),
-        (
-            ("VARIABLE_OR_FUNCTIONCALL", Type::Id("".to_owned())),
-            vec![
-                Production::NonTerm("CALL_OR_INDEXED_ID"),
-                Production::NonTerm("REP_CI_ID0"),
-            ],
-        ),
-        (
-            ("FACTOR", Type::Id("".to_owned())),
-            vec![Production::NonTerm("VARIABLE_OR_FUNCTIONCALL")],
-        ),
-        (
-            ("FACTOR", Type::OpenPar),
-            vec![
-                Production::Term(Type::OpenPar),
-                Production::NonTerm("ARITHEXPR"),
-                Production::Term(Type::ClosePar),
-            ],
-        ),
-        (
-            ("FACTOR", Type::Minus),
-            vec![Production::NonTerm("SIGN"), Production::NonTerm("FACTOR")],
-        ),
-        (
-            ("FACTOR", Type::Plus),
-            vec![Production::NonTerm("SIGN"), Production::NonTerm("FACTOR")],
-        ),
-        (
-            ("FACTOR", Type::Not),
-            vec![Production::Term(Type::Not), Production::NonTerm("FACTOR")],
-        ),
-        (
-            ("FACTOR", Type::FloatNum(0f64)),
-            vec![Production::Term(Type::FloatNum(0f64))],
-        ),
-        (
-            ("FACTOR", Type::IntNum(0)),
-            vec![Production::Term(Type::IntNum(0))],
-        ),
-        (
-            ("FPARAMS", Type::Id("".to_owned())),
-            vec![
-                Production::Term(Type::Id("".to_owned())),
-                Production::Term(Type::Colon),
-                Production::NonTerm("TYPE"),
-                Production::NonTerm("REPTFPARAMS3"),
-                Production::NonTerm("REPTFPARAMS4"),
-            ],
-        ),
-        (("FPARAMS", Type::ClosePar), vec![]),
-        (
-            ("FPARAMSTAIL", Type::Comma),
-            vec![
-                Production::Term(Type::Comma),
-                Production::Term(Type::Id("".to_owned())),
-                Production::Term(Type::Colon),
-                Production::NonTerm("TYPE"),
-                Production::NonTerm("REPTFPARAMSTAIL4"),
-            ],
-        ),
-        (
-            ("FUNCBODY", Type::OpenCubr),
-            vec![
-                Production::Term(Type::OpenCubr),
-                Production::NonTerm("REPTFUNCBODY1"),
-                Production::Term(Type::CloseCubr),
-            ],
-        ),
-        (
-            ("FUNCDEF", Type::Function),
-            vec![
-                Production::NonTerm("FUNCHEAD"),
-                Production::NonTerm("FUNCBODY"),
-            ],
-        ),
-        (
-            ("FUNCHEAD", Type::Function),
-            vec![
-                Production::Term(Type::Function),
-                Production::Term(Type::Id("".to_owned())),
-                Production::NonTerm("FUNCHEADTAIL"),
-            ],
-        ),
-        (
-            ("FUNCHEADTAIL", Type::OpenPar),
-            vec![
-                Production::NonTerm("FUNCHEADPARAMS"),
-                Production::Term(Type::ReturnType),
-                Production::NonTerm("RETURNTYPE"),
-            ],
-        ),
-        (
-            ("FUNCHEADTAIL", Type::ScopeOp),
-            vec![Production::NonTerm("FUNCHEADSR")],
-        ),
-        (
-            ("FUNCHEADPARAMS", Type::OpenPar),
-            vec![
-                Production::Term(Type::OpenPar),
-                Production::NonTerm("FPARAMS"),
-                Production::Term(Type::ClosePar),
-            ],
-        ),
-        (
-            ("FUNCHEADSR", Type::ScopeOp),
-            vec![
-                Production::Term(Type::ScopeOp),
-                Production::NonTerm("FUNCHEADSRTAIL"),
-            ],
-        ),
-        (
-            ("FUNCHEADSRTAIL", Type::Id("".to_owned())),
-            vec![
-                Production::Term(Type::Id("".to_owned())),
-                Production::NonTerm("FUNCHEADPARAMS"),
-                Production::Term(Type::ReturnType),
-                Production::NonTerm("RETURNTYPE"),
-            ],
-        ),
-        (
-            ("FUNCHEADSRTAIL", Type::Constructor),
-            vec![
-                Production::Term(Type::Constructor),
-                Production::NonTerm("FUNCHEADPARAMS"),
-            ],
-        ),
-        (("REP_CI_ID0", Type::Id("".to_owned())), vec![]),
-        (
-            ("REP_CI_ID0", Type::Dot),
-            vec![
-                Production::Term(Type::Dot),
-                Production::NonTerm("CALL_OR_INDEXED_ID"),
-                Production::NonTerm("REP_CI_ID0"),
-            ],
-        ),
-        (("REP_CI_ID0", Type::Semi), vec![]),
-        (("REP_CI_ID0", Type::ClosePar), vec![]),
-        (("REP_CI_ID0", Type::Minus), vec![]),
-        (("REP_CI_ID0", Type::Plus), vec![]),
-        (("REP_CI_ID0", Type::Comma), vec![]),
-        (("REP_CI_ID0", Type::And), vec![]),
-        (("REP_CI_ID0", Type::Div), vec![]),
-        (("REP_CI_ID0", Type::Mult), vec![]),
-        (("REP_CI_ID0", Type::CloseSqbr), vec![]),
-        (("REP_CI_ID0", Type::GEq), vec![]),
-        (("REP_CI_ID0", Type::LEq), vec![]),
-        (("REP_CI_ID0", Type::Gt), vec![]),
-        (("REP_CI_ID0", Type::Lt), vec![]),
-        (("REP_CI_ID0", Type::NotEq), vec![]),
-        (("REP_CI_ID0", Type::Eq), vec![]),
-        (("REP_CI_ID0", Type::Or), vec![]),
-        (
-            ("CALL", Type::OpenPar),
-            vec![
-                Production::Term(Type::OpenPar),
-                Production::NonTerm("APARAMS"),
-                Production::Term(Type::ClosePar),
-            ],
-        ),
-        (("INDEXED", Type::Id("".to_owned())), vec![]),
-        (("INDEXED", Type::Dot), vec![]),
-        (("INDEXED", Type::Semi), vec![]),
-        (("INDEXED", Type::ClosePar), vec![]),
-        (("INDEXED", Type::Minus), vec![]),
-        (("INDEXED", Type::Plus), vec![]),
-        (("INDEXED", Type::Comma), vec![]),
-        (("INDEXED", Type::And), vec![]),
-        (("INDEXED", Type::Div), vec![]),
-        (("INDEXED", Type::Mult), vec![]),
-        (("INDEXED", Type::CloseSqbr), vec![]),
-        (
-            ("INDEXED", Type::OpenSqbr),
-            vec![
-                Production::NonTerm("INDICE"),
-                Production::NonTerm("INDEXED"),
-            ],
-        ),
-        (("INDEXED", Type::GEq), vec![]),
-        (("INDEXED", Type::LEq), vec![]),
-        (("INDEXED", Type::Gt), vec![]),
-        (("INDEXED", Type::Lt), vec![]),
-        (("INDEXED", Type::NotEq), vec![]),
-        (("INDEXED", Type::Eq), vec![]),
-        (("INDEXED", Type::Assign), vec![]),
-        (("INDEXED", Type::Or), vec![]),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Id("".to_owned())),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Dot),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Semi),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::ClosePar),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::OpenPar),
-            vec![Production::NonTerm("CALL")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Minus),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Plus),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Comma),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::And),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Div),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Mult),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::CloseSqbr),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::OpenSqbr),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::GEq),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::LEq),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Gt),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Lt),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::NotEq),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Eq),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("OPT_CALL_OR_INDEXED", Type::Or),
-            vec![Production::NonTerm("INDEXED")],
-        ),
-        (
-            ("CALL_OR_INDEXED_ID", Type::Id("".to_owned())),
-            vec![
-                Production::Term(Type::Id("".to_owned())),
-                Production::NonTerm("OPT_CALL_OR_INDEXED"),
-            ],
-        ),
-        (
-            ("INDICE", Type::OpenSqbr),
-            vec![
-                Production::Term(Type::OpenSqbr),
-                Production::NonTerm("ARITHEXPR"),
-                Production::Term(Type::CloseSqbr),
-            ],
-        ),
-        (
-            ("LOCALVARDECL", Type::LocalVar),
-            vec![
-                Production::Term(Type::LocalVar),
-                Production::Term(Type::Id("".to_owned())),
-                Production::Term(Type::Colon),
-                Production::NonTerm("TYPE"),
-                Production::NonTerm("LOCALVARDECLTAIL"),
-            ],
-        ),
-        (
-            ("LOCALVARDECLTAIL", Type::Semi),
-            vec![
-                Production::NonTerm("REPTLOCALVARDECL4"),
-                Production::Term(Type::Semi),
-            ],
-        ),
-        (
-            ("LOCALVARDECLTAIL", Type::OpenPar),
-            vec![
-                Production::Term(Type::OpenPar),
-                Production::NonTerm("APARAMS"),
-                Production::Term(Type::ClosePar),
-                Production::Term(Type::Semi),
-            ],
-        ),
-        (
-            ("LOCALVARDECLTAIL", Type::OpenSqbr),
-            vec![
-                Production::NonTerm("REPTLOCALVARDECL4"),
-                Production::Term(Type::Semi),
-            ],
-        ),
-        (
-            ("LOCALVARDECLORSTMT", Type::Id("".to_owned())),
-            vec![Production::NonTerm("STATEMENT")],
-        ),
-        (
-            ("LOCALVARDECLORSTMT", Type::Return),
-            vec![Production::NonTerm("STATEMENT")],
-        ),
-        (
-            ("LOCALVARDECLORSTMT", Type::Write),
-            vec![Production::NonTerm("STATEMENT")],
-        ),
-        (
-            ("LOCALVARDECLORSTMT", Type::Read),
-            vec![Production::NonTerm("STATEMENT")],
-        ),
-        (
-            ("LOCALVARDECLORSTMT", Type::While),
-            vec![Production::NonTerm("STATEMENT")],
-        ),
-        (
-            ("LOCALVARDECLORSTMT", Type::If),
-            vec![Production::NonTerm("STATEMENT")],
-        ),
-        (
-            ("LOCALVARDECLORSTMT", Type::LocalVar),
-            vec![Production::NonTerm("LOCALVARDECL")],
-        ),
-        (
-            ("MEMBERDECL", Type::Attribute),
-            vec![Production::NonTerm("MEMBERVARDECL")],
-        ),
-        (
-            ("MEMBERDECL", Type::Constructor),
-            vec![Production::NonTerm("MEMBERFUNCDECL")],
-        ),
-        (
-            ("MEMBERDECL", Type::Function),
-            vec![Production::NonTerm("MEMBERFUNCDECL")],
-        ),
-        (
-            ("MEMBERFUNCDECL", Type::Constructor),
-            vec![
-                Production::Term(Type::Constructor),
-                Production::Term(Type::Colon),
-                Production::Term(Type::OpenPar),
-                Production::NonTerm("FPARAMS"),
-                Production::Term(Type::ClosePar),
-                Production::Term(Type::Semi),
-            ],
-        ),
-        (
-            ("MEMBERFUNCDECL", Type::Function),
-            vec![
-                Production::Term(Type::Function),
-                Production::Term(Type::Id("".to_owned())),
-                Production::Term(Type::Colon),
-                Production::Term(Type::OpenPar),
-                Production::NonTerm("FPARAMS"),
-                Production::Term(Type::ClosePar),
-                Production::Term(Type::ReturnType),
-                Production::NonTerm("RETURNTYPE"),
-                Production::Term(Type::Semi),
-            ],
-        ),
-        (
-            ("MEMBERVARDECL", Type::Attribute),
-            vec![
-                Production::Term(Type::Attribute),
-                Production::Term(Type::Id("".to_owned())),
-                Production::Term(Type::Colon),
-                Production::NonTerm("TYPE"),
-                Production::NonTerm("REPTMEMBERVARDECL4"),
-                Production::Term(Type::Semi),
-            ],
-        ),
-        (("MULTOP", Type::And), vec![Production::Term(Type::And)]),
-        (("MULTOP", Type::Div), vec![Production::Term(Type::Div)]),
-        (("MULTOP", Type::Mult), vec![Production::Term(Type::Mult)]),
-        (("OPTCLASSDECL2", Type::OpenCubr), vec![]),
-        (
-            ("OPTCLASSDECL2", Type::IsA),
-            vec![
-                Production::Term(Type::IsA),
-                Production::Term(Type::Id("".to_owned())),
-                Production::NonTerm("REPTOPTCLASSDECL22"),
-            ],
-        ),
         (("REPTAPARAMS1", Type::ClosePar), vec![]),
         (
             ("REPTAPARAMS1", Type::Comma),
@@ -1444,45 +1427,12 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("REPTAPARAMS1"),
             ],
         ),
+        (("REPTARRAYSIZE", Type::Semi), vec![]),
         (
-            ("REPTCLASSDECL4", Type::Private),
+            ("REPTARRAYSIZE", Type::OpenSqbr),
             vec![
-                Production::NonTerm("VISIBILITY"),
-                Production::NonTerm("MEMBERDECL"),
-                Production::NonTerm("REPTCLASSDECL4"),
-            ],
-        ),
-        (
-            ("REPTCLASSDECL4", Type::Public),
-            vec![
-                Production::NonTerm("VISIBILITY"),
-                Production::NonTerm("MEMBERDECL"),
-                Production::NonTerm("REPTCLASSDECL4"),
-            ],
-        ),
-        (("REPTCLASSDECL4", Type::CloseCubr), vec![]),
-        (
-            ("REPTCLASSDECL4", Type::Attribute),
-            vec![
-                Production::NonTerm("VISIBILITY"),
-                Production::NonTerm("MEMBERDECL"),
-                Production::NonTerm("REPTCLASSDECL4"),
-            ],
-        ),
-        (
-            ("REPTCLASSDECL4", Type::Constructor),
-            vec![
-                Production::NonTerm("VISIBILITY"),
-                Production::NonTerm("MEMBERDECL"),
-                Production::NonTerm("REPTCLASSDECL4"),
-            ],
-        ),
-        (
-            ("REPTCLASSDECL4", Type::Function),
-            vec![
-                Production::NonTerm("VISIBILITY"),
-                Production::NonTerm("MEMBERDECL"),
-                Production::NonTerm("REPTCLASSDECL4"),
+                Production::NonTerm("ARRAYSIZE"),
+                Production::NonTerm("REPTARRAYSIZE"),
             ],
         ),
         (("REPTFPARAMS3", Type::ClosePar), vec![]),
@@ -1511,96 +1461,122 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("REPTFPARAMSTAIL4"),
             ],
         ),
+        (("REPTIDNEST1", Type::ClosePar), vec![]),
+        (("REPTIDNEST1", Type::Dot), vec![]),
+        (("REPTIDNEST1", Type::Semi), vec![]),
+        (("REPTIDNEST1", Type::Minus), vec![]),
+        (("REPTIDNEST1", Type::Plus), vec![]),
+        (("REPTIDNEST1", Type::Comma), vec![]),
+        (("REPTIDNEST1", Type::GEq), vec![]),
+        (("REPTIDNEST1", Type::LEq), vec![]),
+        (("REPTIDNEST1", Type::Gt), vec![]),
+        (("REPTIDNEST1", Type::Lt), vec![]),
+        (("REPTIDNEST1", Type::NotEq), vec![]),
+        (("REPTIDNEST1", Type::Eq), vec![]),
+        (("REPTIDNEST1", Type::And), vec![]),
+        (("REPTIDNEST1", Type::Div), vec![]),
+        (("REPTIDNEST1", Type::Mult), vec![]),
+        (("REPTIDNEST1", Type::CloseSqbr), vec![]),
         (
-            ("REPTFUNCBODY1", Type::Id("".to_owned())),
+            ("REPTIDNEST1", Type::OpenSqbr),
             vec![
-                Production::NonTerm("LOCALVARDECLORSTMT"),
-                Production::NonTerm("REPTFUNCBODY1"),
+                Production::NonTerm("INDICE"),
+                Production::NonTerm("REPTIDNEST1"),
             ],
         ),
+        (("REPTIDNEST1", Type::Assign), vec![]),
+        (("REPTIDNEST1", Type::Or), vec![]),
+        (("REPTINHERITSLIST", Type::OpenCubr), vec![]),
         (
-            ("REPTFUNCBODY1", Type::Return),
-            vec![
-                Production::NonTerm("LOCALVARDECLORSTMT"),
-                Production::NonTerm("REPTFUNCBODY1"),
-            ],
-        ),
-        (
-            ("REPTFUNCBODY1", Type::Write),
-            vec![
-                Production::NonTerm("LOCALVARDECLORSTMT"),
-                Production::NonTerm("REPTFUNCBODY1"),
-            ],
-        ),
-        (
-            ("REPTFUNCBODY1", Type::Read),
-            vec![
-                Production::NonTerm("LOCALVARDECLORSTMT"),
-                Production::NonTerm("REPTFUNCBODY1"),
-            ],
-        ),
-        (
-            ("REPTFUNCBODY1", Type::While),
-            vec![
-                Production::NonTerm("LOCALVARDECLORSTMT"),
-                Production::NonTerm("REPTFUNCBODY1"),
-            ],
-        ),
-        (
-            ("REPTFUNCBODY1", Type::If),
-            vec![
-                Production::NonTerm("LOCALVARDECLORSTMT"),
-                Production::NonTerm("REPTFUNCBODY1"),
-            ],
-        ),
-        (("REPTFUNCBODY1", Type::CloseCubr), vec![]),
-        (
-            ("REPTFUNCBODY1", Type::LocalVar),
-            vec![
-                Production::NonTerm("LOCALVARDECLORSTMT"),
-                Production::NonTerm("REPTFUNCBODY1"),
-            ],
-        ),
-        (("REPTLOCALVARDECL4", Type::Semi), vec![]),
-        (
-            ("REPTLOCALVARDECL4", Type::OpenSqbr),
-            vec![
-                Production::NonTerm("ARRAYSIZE"),
-                Production::NonTerm("REPTLOCALVARDECL4"),
-            ],
-        ),
-        (("REPTMEMBERVARDECL4", Type::Semi), vec![]),
-        (
-            ("REPTMEMBERVARDECL4", Type::OpenSqbr),
-            vec![
-                Production::NonTerm("ARRAYSIZE"),
-                Production::NonTerm("REPTMEMBERVARDECL4"),
-            ],
-        ),
-        (("REPTOPTCLASSDECL22", Type::OpenCubr), vec![]),
-        (
-            ("REPTOPTCLASSDECL22", Type::Comma),
+            ("REPTINHERITSLIST", Type::Comma),
             vec![
                 Production::Term(Type::Comma),
                 Production::Term(Type::Id("".to_owned())),
-                Production::NonTerm("REPTOPTCLASSDECL22"),
-            ],
-        ),
-        (("REPTSTART0", Type::EndOfFile), vec![]),
-        (
-            ("REPTSTART0", Type::Function),
-            vec![
-                Production::NonTerm("CLASSDECLORFUNCDEF"),
-                Production::NonTerm("REPTSTART0"),
+                Production::NonTerm("REPTINHERITSLIST"),
             ],
         ),
         (
-            ("REPTSTART0", Type::Class),
+            ("REPTLOCALVARORSTAT", Type::Id("".to_owned())),
             vec![
-                Production::NonTerm("CLASSDECLORFUNCDEF"),
-                Production::NonTerm("REPTSTART0"),
+                Production::NonTerm("LOCALVARORSTAT"),
+                Production::NonTerm("REPTLOCALVARORSTAT"),
             ],
         ),
+        (
+            ("REPTLOCALVARORSTAT", Type::Return),
+            vec![
+                Production::NonTerm("LOCALVARORSTAT"),
+                Production::NonTerm("REPTLOCALVARORSTAT"),
+            ],
+        ),
+        (
+            ("REPTLOCALVARORSTAT", Type::Write),
+            vec![
+                Production::NonTerm("LOCALVARORSTAT"),
+                Production::NonTerm("REPTLOCALVARORSTAT"),
+            ],
+        ),
+        (
+            ("REPTLOCALVARORSTAT", Type::Read),
+            vec![
+                Production::NonTerm("LOCALVARORSTAT"),
+                Production::NonTerm("REPTLOCALVARORSTAT"),
+            ],
+        ),
+        (
+            ("REPTLOCALVARORSTAT", Type::While),
+            vec![
+                Production::NonTerm("LOCALVARORSTAT"),
+                Production::NonTerm("REPTLOCALVARORSTAT"),
+            ],
+        ),
+        (
+            ("REPTLOCALVARORSTAT", Type::If),
+            vec![
+                Production::NonTerm("LOCALVARORSTAT"),
+                Production::NonTerm("REPTLOCALVARORSTAT"),
+            ],
+        ),
+        (("REPTLOCALVARORSTAT", Type::CloseCubr), vec![]),
+        (
+            ("REPTLOCALVARORSTAT", Type::LocalVar),
+            vec![
+                Production::NonTerm("LOCALVARORSTAT"),
+                Production::NonTerm("REPTLOCALVARORSTAT"),
+            ],
+        ),
+        (
+            ("REPTMEMBERDECL", Type::Private),
+            vec![
+                Production::NonTerm("VISIBILITY"),
+                Production::NonTerm("MEMBERDECL"),
+                Production::NonTerm("REPTMEMBERDECL"),
+            ],
+        ),
+        (
+            ("REPTMEMBERDECL", Type::Public),
+            vec![
+                Production::NonTerm("VISIBILITY"),
+                Production::NonTerm("MEMBERDECL"),
+                Production::NonTerm("REPTMEMBERDECL"),
+            ],
+        ),
+        (("REPTMEMBERDECL", Type::CloseCubr), vec![]),
+        (
+            ("REPTPROG0", Type::Function),
+            vec![
+                Production::NonTerm("CLASSDECLORFUNCDEF"),
+                Production::NonTerm("REPTPROG0"),
+            ],
+        ),
+        (
+            ("REPTPROG0", Type::Class),
+            vec![
+                Production::NonTerm("CLASSDECLORFUNCDEF"),
+                Production::NonTerm("REPTPROG0"),
+            ],
+        ),
+        (("REPTPROG0", Type::EndOfFile), vec![]),
         (
             ("REPTSTATBLOCK1", Type::Id("".to_owned())),
             vec![
@@ -1644,6 +1620,37 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (("REPTSTATBLOCK1", Type::CloseCubr), vec![]),
+        (("REPTVARIABLE", Type::ClosePar), vec![]),
+        (
+            ("REPTVARIABLE", Type::Dot),
+            vec![
+                Production::NonTerm("VARIDNEST"),
+                Production::NonTerm("REPTVARIABLE"),
+            ],
+        ),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::ClosePar), vec![]),
+        (
+            ("REPTVARIABLEORFUNCTIONCALL", Type::Dot),
+            vec![
+                Production::NonTerm("IDNEST"),
+                Production::NonTerm("REPTVARIABLEORFUNCTIONCALL"),
+            ],
+        ),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Semi), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Minus), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Plus), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Comma), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::GEq), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::LEq), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Gt), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Lt), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::NotEq), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Eq), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::And), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Div), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Mult), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::CloseSqbr), vec![]),
+        (("REPTVARIABLEORFUNCTIONCALL", Type::Or), vec![]),
         (
             ("RETURNTYPE", Type::Id("".to_owned())),
             vec![Production::NonTerm("TYPE")],
@@ -1660,8 +1667,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("RETURNTYPE", Type::Void),
             vec![Production::Term(Type::Void)],
         ),
-        (("RIGHTRECARITHEXPR", Type::Semi), vec![]),
         (("RIGHTRECARITHEXPR", Type::ClosePar), vec![]),
+        (("RIGHTRECARITHEXPR", Type::Semi), vec![]),
         (
             ("RIGHTRECARITHEXPR", Type::Minus),
             vec![
@@ -1679,13 +1686,13 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (("RIGHTRECARITHEXPR", Type::Comma), vec![]),
-        (("RIGHTRECARITHEXPR", Type::CloseSqbr), vec![]),
         (("RIGHTRECARITHEXPR", Type::GEq), vec![]),
         (("RIGHTRECARITHEXPR", Type::LEq), vec![]),
         (("RIGHTRECARITHEXPR", Type::Gt), vec![]),
         (("RIGHTRECARITHEXPR", Type::Lt), vec![]),
         (("RIGHTRECARITHEXPR", Type::NotEq), vec![]),
         (("RIGHTRECARITHEXPR", Type::Eq), vec![]),
+        (("RIGHTRECARITHEXPR", Type::CloseSqbr), vec![]),
         (
             ("RIGHTRECARITHEXPR", Type::Or),
             vec![
@@ -1694,11 +1701,17 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RIGHTRECARITHEXPR"),
             ],
         ),
-        (("RIGHTRECTERM", Type::Semi), vec![]),
         (("RIGHTRECTERM", Type::ClosePar), vec![]),
+        (("RIGHTRECTERM", Type::Semi), vec![]),
         (("RIGHTRECTERM", Type::Minus), vec![]),
         (("RIGHTRECTERM", Type::Plus), vec![]),
         (("RIGHTRECTERM", Type::Comma), vec![]),
+        (("RIGHTRECTERM", Type::GEq), vec![]),
+        (("RIGHTRECTERM", Type::LEq), vec![]),
+        (("RIGHTRECTERM", Type::Gt), vec![]),
+        (("RIGHTRECTERM", Type::Lt), vec![]),
+        (("RIGHTRECTERM", Type::NotEq), vec![]),
+        (("RIGHTRECTERM", Type::Eq), vec![]),
         (
             ("RIGHTRECTERM", Type::And),
             vec![
@@ -1724,12 +1737,6 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (("RIGHTRECTERM", Type::CloseSqbr), vec![]),
-        (("RIGHTRECTERM", Type::GEq), vec![]),
-        (("RIGHTRECTERM", Type::LEq), vec![]),
-        (("RIGHTRECTERM", Type::Gt), vec![]),
-        (("RIGHTRECTERM", Type::Lt), vec![]),
-        (("RIGHTRECTERM", Type::NotEq), vec![]),
-        (("RIGHTRECTERM", Type::Eq), vec![]),
         (("RIGHTRECTERM", Type::Or), vec![]),
         (("SIGN", Type::Minus), vec![Production::Term(Type::Minus)]),
         (("SIGN", Type::Plus), vec![Production::Term(Type::Plus)]),
@@ -1770,7 +1777,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (
             ("STATEMENT", Type::Id("".to_owned())),
             vec![
-                Production::NonTerm("ASSIGN_OR_FUNCTIONCALL"),
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("STATEMENTIDNEST"),
                 Production::Term(Type::Semi),
             ],
         ),
@@ -1830,68 +1838,64 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (
-            ("ASSIGN_OR_FUNCTIONCALL", Type::Id("".to_owned())),
+            ("STATEMENTIDNEST", Type::OpenPar),
             vec![
-                Production::Term(Type::Id("".to_owned())),
-                Production::NonTerm("ASSIGN_OR_FUNCTIONCALL_TAIL"),
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("APARAMS"),
+                Production::Term(Type::ClosePar),
+                Production::NonTerm("STATEMENTIDNEST2"),
             ],
         ),
         (
-            ("ASSIGN_OR_FUNCTIONCALL_TAIL", Type::Dot),
-            vec![
-                Production::NonTerm("INDEXED"),
-                Production::NonTerm("AF_INDEXED_TAIL"),
-            ],
-        ),
-        (
-            ("ASSIGN_OR_FUNCTIONCALL_TAIL", Type::OpenPar),
-            vec![
-                Production::NonTerm("CALL"),
-                Production::NonTerm("AF_CALL_TAIL"),
-            ],
-        ),
-        (
-            ("ASSIGN_OR_FUNCTIONCALL_TAIL", Type::OpenSqbr),
-            vec![
-                Production::NonTerm("INDEXED"),
-                Production::NonTerm("AF_INDEXED_TAIL"),
-            ],
-        ),
-        (
-            ("ASSIGN_OR_FUNCTIONCALL_TAIL", Type::Assign),
-            vec![
-                Production::NonTerm("INDEXED"),
-                Production::NonTerm("AF_INDEXED_TAIL"),
-            ],
-        ),
-        (
-            ("AF_INDEXED_TAIL", Type::Dot),
+            ("STATEMENTIDNEST", Type::Dot),
             vec![
                 Production::Term(Type::Dot),
-                Production::NonTerm("ASSIGN_OR_FUNCTIONCALL"),
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("STATEMENTIDNEST"),
             ],
         ),
         (
-            ("AF_INDEXED_TAIL", Type::Assign),
+            ("STATEMENTIDNEST", Type::OpenSqbr),
+            vec![
+                Production::NonTerm("INDICE"),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::NonTerm("STATEMENTIDNEST3"),
+            ],
+        ),
+        (
+            ("STATEMENTIDNEST", Type::Assign),
             vec![Production::NonTerm("ASSIGNOP"), Production::NonTerm("EXPR")],
         ),
         (
-            ("AF_CALL_TAIL", Type::Dot),
+            ("STATEMENTIDNEST2", Type::Dot),
             vec![
                 Production::Term(Type::Dot),
-                Production::NonTerm("ASSIGN_OR_FUNCTIONCALL"),
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("STATEMENTIDNEST"),
             ],
         ),
-        (("AF_CALL_TAIL", Type::Semi), vec![]),
+        (("STATEMENTIDNEST2", Type::Semi), vec![]),
         (
-            ("TERM", Type::Id("".to_owned())),
+            ("STATEMENTIDNEST3", Type::Dot),
+            vec![
+                Production::Term(Type::Dot),
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("STATEMENTIDNEST"),
+            ],
+        ),
+        (
+            ("STATEMENTIDNEST3", Type::Assign),
+            vec![Production::NonTerm("ASSIGNOP"), Production::NonTerm("EXPR")],
+        ),
+        (
+            ("TERM", Type::OpenPar),
             vec![
                 Production::NonTerm("FACTOR"),
                 Production::NonTerm("RIGHTRECTERM"),
             ],
         ),
         (
-            ("TERM", Type::OpenPar),
+            ("TERM", Type::Id("".to_owned())),
             vec![
                 Production::NonTerm("FACTOR"),
                 Production::NonTerm("RIGHTRECTERM"),
@@ -1944,11 +1948,68 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (
             ("VARIABLE", Type::Id("".to_owned())),
             vec![
-                Production::NonTerm("CALL_OR_INDEXED_ID"),
-                Production::NonTerm("REP_CI_ID0"),
                 Production::Term(Type::Id("".to_owned())),
-                Production::NonTerm("INDEXED"),
+                Production::NonTerm("VARIABLE2"),
             ],
+        ),
+        (
+            ("VARIABLE2", Type::ClosePar),
+            vec![
+                Production::NonTerm("REPTIDNEST1"),
+                Production::NonTerm("REPTVARIABLE"),
+            ],
+        ),
+        (
+            ("VARIABLE2", Type::OpenPar),
+            vec![
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("APARAMS"),
+                Production::Term(Type::ClosePar),
+                Production::NonTerm("VARIDNEST"),
+            ],
+        ),
+        (
+            ("VARIABLE2", Type::Dot),
+            vec![
+                Production::NonTerm("REPTIDNEST1"),
+                Production::NonTerm("REPTVARIABLE"),
+            ],
+        ),
+        (
+            ("VARIABLE2", Type::OpenSqbr),
+            vec![
+                Production::NonTerm("REPTIDNEST1"),
+                Production::NonTerm("REPTVARIABLE"),
+            ],
+        ),
+        (
+            ("VARIDNEST", Type::Dot),
+            vec![
+                Production::Term(Type::Dot),
+                Production::Term(Type::Id("".to_owned())),
+                Production::NonTerm("VARIDNEST2"),
+            ],
+        ),
+        (
+            ("VARIDNEST2", Type::ClosePar),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("VARIDNEST2", Type::OpenPar),
+            vec![
+                Production::Term(Type::OpenPar),
+                Production::NonTerm("APARAMS"),
+                Production::Term(Type::ClosePar),
+                Production::NonTerm("VARIDNEST"),
+            ],
+        ),
+        (
+            ("VARIDNEST2", Type::Dot),
+            vec![Production::NonTerm("REPTIDNEST1")],
+        ),
+        (
+            ("VARIDNEST2", Type::OpenSqbr),
+            vec![Production::NonTerm("REPTIDNEST1")],
         ),
         (
             ("VISIBILITY", Type::Private),
@@ -1958,8 +2019,5 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("VISIBILITY", Type::Public),
             vec![Production::Term(Type::Public)],
         ),
-        (("VISIBILITY", Type::Attribute), vec![]),
-        (("VISIBILITY", Type::Constructor), vec![]),
-        (("VISIBILITY", Type::Function), vec![]),
     ])
 }

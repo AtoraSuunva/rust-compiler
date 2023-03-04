@@ -65,6 +65,7 @@ function makeTable(terms, prodRows) {
 
 const termTypeMap = {
   $: "Type::EndOfFile",
+  eof: "Type::EndOfFile",
   id: 'Type::Id("".to_owned())',
   intlit: "Type::IntNum(0)",
   intnum: "Type::IntNum(0)",
@@ -121,6 +122,7 @@ const termTypeMap = {
   return: "Type::Return",
   localvar: "Type::LocalVar",
   constructor: "Type::Constructor",
+  constructorkeyword: "Type::Constructor",
   attribute: "Type::Attribute",
   function: "Type::Function",
   public: "Type::Public",
