@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, env};
 
 use crate::lexical::{
     lexer::LexerScanner,
@@ -7,10 +7,8 @@ use crate::lexical::{
 
 use super::parsing_table::{self, Production};
 
-pub fn parse(
-    scanner: &mut LexerScanner,
-    debug: bool,
-) -> Result<(Vec<String>, Vec<String>), String> {
+pub fn parse(scanner: &mut LexerScanner) -> Result<(Vec<String>, Vec<String>), String> {
+    let debug = env::var("DEBUG").map_or(false, |_| true);
     let mut stack: Vec<&Production> = vec![&Production::NonTerm("START")];
     let mut token = match scanner.next_token() {
         Some(t) => t,
@@ -45,7 +43,7 @@ pub fn parse(
         }
 
         if debug {
-            println!("token: {:?}", token);
+            eprintln!("token: {:?}", token);
         }
 
         let top = match stack.last() {
@@ -54,13 +52,13 @@ pub fn parse(
         };
 
         if debug {
-            println!("top  : {:?}", top);
+            eprintln!("top  : {:?}", top);
         }
 
         match top {
             Production::Term(t) => {
                 if debug {
-                    println!("t: {:?}", t);
+                    eprintln!("t: {:?}", t);
                 }
 
                 if t == &token.token_type {
@@ -76,7 +74,7 @@ pub fn parse(
                     };
                 } else {
                     if debug {
-                        println!("Error: {:?} != {:?}", t, token.token_type);
+                        eprintln!("Error: {:?} != {:?}", t, token.token_type);
                     }
 
                     match skip_error(scanner, &token, top, &mut stack, &first_sets, &follow_sets) {
@@ -88,8 +86,8 @@ pub fn parse(
 
             Production::NonTerm(nt) => {
                 if debug {
-                    println!("nt: {:?} {:?}", nt, &(nt, token.token_type.clone()));
-                    println!("match: {:?}", &(nt, token.token_type.empty_variant()));
+                    eprintln!("nt: {:?} {:?}", nt, &(nt, token.token_type.clone()));
+                    eprintln!("match: {:?}", &(nt, token.token_type.empty_variant()));
                 }
 
                 match parsing_table.get(&(nt, token.token_type.empty_variant())) {
@@ -108,12 +106,12 @@ pub fn parse(
                         ));
 
                         if debug {
-                            println!("= {}\n", derivation.last().unwrap());
+                            eprintln!("= {}\n", derivation.last().unwrap());
                         }
                     }
                     None => {
                         if debug {
-                            println!(
+                            eprintln!(
                                 "Error: no production found for {:?} {:?}",
                                 nt, token.token_type
                             );
@@ -160,10 +158,10 @@ fn skip_error(
         stack.last().unwrap()
     );
 
-    println!("{}", error_message);
-    // println!("lookahead: {:?}", lookahead);
-    // println!("top: {:?}", top);
-    // println!("Stack: {:?}", stack);
+    eprintln!("{}", error_message);
+    // eprintln!("lookahead: {:?}", lookahead);
+    // eprintln!("top: {:?}", top);
+    // eprintln!("Stack: {:?}", stack);
 
     let nt = match top {
         Production::NonTerm(nt) => nt,
@@ -187,7 +185,7 @@ fn skip_error(
 
     // Pop the stack if the next token is in the FOLLOW set of our current non-terminal on top of the stack.
     if lookahead.token_type == Type::EndOfFile || follow.contains(&top_type) {
-        println!("Skipping token '{}'", lookahead.lexeme);
+        eprintln!("Skipping token '{}'", lookahead.lexeme);
         stack.pop();
         return Ok(error_message);
     }
@@ -203,7 +201,7 @@ fn skip_error(
 
         top_type = lookahead.token_type.empty_variant();
 
-        println!("Skipping token '{}'", lookahead.lexeme);
+        eprintln!("Skipping token '{}'", lookahead.lexeme);
     }
 
     Ok(error_message)

@@ -54,7 +54,7 @@ where
     let valid_path = path.with_extension("outderivation");
     let invalid_path = path.with_extension("outsyntaxerrors");
 
-    match predictive_parser::parse(&mut lexer, false) {
+    match predictive_parser::parse(&mut lexer) {
         Ok((derivations, errors)) => {
             println!("Parsing successful!");
             println!("Errors: {}", errors.len());
