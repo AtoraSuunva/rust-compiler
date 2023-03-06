@@ -74,7 +74,7 @@ pub fn create_subtree_from_n_nodes(name: String, count: usize) -> SemanticAction
 
             for _ in 0..count {
                 match stack.pop() {
-                    Some(node) => subtree.append(node),
+                    Some(node) => subtree.prepend(node),
                     None => panic!("Stack is empty while creating subtree!"),
                 }
             }
@@ -100,7 +100,7 @@ pub fn create_subtree_until_marker(name: String) -> SemanticAction {
                             break;
                         }
 
-                        subtree.append(node);
+                        subtree.prepend(node);
                     }
                     None => panic!("Stack is empty while creating subtree!"),
                 }
