@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::{location::Location, token_type::Type};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: Type,
     pub lexeme: String,
@@ -15,6 +15,14 @@ impl Token {
             token_type,
             lexeme,
             location,
+        }
+    }
+
+    pub fn empty() -> Token {
+        Token {
+            token_type: Type::EndOfFile,
+            lexeme: String::new(),
+            location: Location::new(0, 0),
         }
     }
 }

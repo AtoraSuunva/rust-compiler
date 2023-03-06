@@ -1,6 +1,8 @@
 use std::{env, fs, path::Path, process};
 
-use rust_compiler_lib::{lexical::lexer::LexerScanner, syntactic::predictive_parser};
+use rust_compiler_lib::{
+    ast::nodes::string_tree, lexical::lexer::LexerScanner, syntactic::predictive_parser,
+};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -51,15 +53,25 @@ where
 
     let mut lexer = LexerScanner::new(&content);
 
+    let ast_path = path.with_extension("outast");
     let valid_path = path.with_extension("outderivation");
     let invalid_path = path.with_extension("outsyntaxerrors");
 
     match predictive_parser::parse(&mut lexer) {
-        Ok((derivations, errors)) => {
+        Ok((derivations, errors, ast_stack)) => {
             println!("Parsing successful!");
             println!("Errors: {}", errors.len());
             println!("Derivations: {}", derivations.len());
             println!("Last Derivation:\n{}", derivations.last().unwrap());
+
+            println!("\n\nFinal AST:");
+            println!("ast_stack: {:?}", ast_stack);
+
+            if let Some(root) = ast_stack.first() {
+                fs::write(ast_path, string_tree(root)).expect("Failed to write to file");
+            } else {
+                println!("No AST generated!");
+            }
 
             fs::write(valid_path, derivations.join("\n")).expect("Failed to write to file");
             fs::write(invalid_path, errors.join("\n")).expect("Failed to write to file");

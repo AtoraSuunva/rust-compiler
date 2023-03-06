@@ -1,13 +1,19 @@
 use std::{collections::HashMap, env};
 
-use crate::lexical::{
-    lexer::LexerScanner,
-    tokens::{location::Location, token::Token, token_type::Type},
+use crate::{
+    ast::nodes::CodeNode,
+    lexical::{
+        lexer::LexerScanner,
+        tokens::{token::Token, token_type::Type},
+    },
+    syntactic::first_follow_sets,
 };
 
 use super::parsing_table::{self, Production};
 
-pub fn parse(scanner: &mut LexerScanner) -> Result<(Vec<String>, Vec<String>), String> {
+type ParserResult = (Vec<String>, Vec<String>, Vec<CodeNode>);
+
+pub fn parse(scanner: &mut LexerScanner) -> Result<ParserResult, String> {
     let debug = env::var("DEBUG").map_or(false, |_| true);
     let mut stack: Vec<&Production> = vec![&Production::NonTerm("START")];
     let mut token = match scanner.next_token() {
@@ -16,23 +22,23 @@ pub fn parse(scanner: &mut LexerScanner) -> Result<(Vec<String>, Vec<String>), S
     };
 
     let parsing_table = parsing_table::get_parsing_table();
-    let first_sets = parsing_table::get_first_set_table();
-    let follow_sets = parsing_table::get_follow_set_table();
+    let first_sets = first_follow_sets::get_first_set_table();
+    let follow_sets = first_follow_sets::get_follow_set_table();
 
     let mut derivation: Vec<String> = vec![];
     let mut errors: Vec<String> = vec![];
     let mut parsed: Vec<String> = vec![];
+
+    let mut ast_stack: Vec<CodeNode> = Vec::new();
+    let mut last_production = &Production::NonTerm("START");
+    let mut last_token = Token::empty();
 
     while !stack.is_empty() {
         // Skip comments
         if token.token_type == Type::InlineCmt || token.token_type == Type::BlockCmt {
             token = match scanner.next_token() {
                 Some(t) => t,
-                None => Token::new(
-                    Type::EndOfFile,
-                    String::from("$"),
-                    Location { line: 0, column: 0 },
-                ),
+                None => Token::empty(),
             };
             continue;
         };
@@ -63,14 +69,12 @@ pub fn parse(scanner: &mut LexerScanner) -> Result<(Vec<String>, Vec<String>), S
 
                 if t == &token.token_type {
                     parsed.push(token.lexeme.clone());
+                    last_production = top;
+                    last_token = token.clone();
                     stack.pop();
                     token = match scanner.next_token() {
                         Some(t) => t,
-                        None => Token::new(
-                            Type::EndOfFile,
-                            String::from("$"),
-                            Location { line: 0, column: 0 },
-                        ),
+                        None => Token::empty(),
                     };
                 } else {
                     if debug {
@@ -92,6 +96,7 @@ pub fn parse(scanner: &mut LexerScanner) -> Result<(Vec<String>, Vec<String>), S
 
                 match parsing_table.get(&(nt, token.token_type.empty_variant())) {
                     Some(productions) => {
+                        last_production = top;
                         stack.pop();
                         stack.extend(productions.iter().rev());
                         derivation.push(format!(
@@ -131,13 +136,24 @@ pub fn parse(scanner: &mut LexerScanner) -> Result<(Vec<String>, Vec<String>), S
                     }
                 }
             }
+
+            Production::Action(action) => {
+                if debug {
+                    eprintln!("Running action:");
+                    eprintln!("production: {:?}", last_production);
+                    eprintln!("ast_stack: {:?}", ast_stack);
+                }
+
+                action(&mut ast_stack, last_production, &last_token);
+                stack.pop();
+            }
         }
     }
 
     if !stack.is_empty() {
         Err("Parsing stack not empty at the end!".to_owned())
     } else {
-        Ok((derivation, errors))
+        Ok((derivation, errors, ast_stack))
     }
 }
 

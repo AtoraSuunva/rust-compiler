@@ -1,11 +1,21 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+};
 
-use crate::lexical::tokens::token_type::Type;
+use crate::{
+    ast::actions::{
+        create_leaf, create_marker, create_subtree_from_n_nodes, create_subtree_until_marker,
+        SemanticAction,
+    },
+    lexical::tokens::token_type::Type,
+};
 
 #[derive(Debug)]
 pub enum Production<'a> {
     Term(Type),
     NonTerm(&'a str),
+    Action(SemanticAction),
 }
 
 impl Display for Production<'_> {
@@ -13,651 +23,9 @@ impl Display for Production<'_> {
         match self {
             Production::Term(t) => write!(f, "'{}'", t),
             Production::NonTerm(nt) => write!(f, "<{}>", nt),
+            Production::Action(a) => a.fmt(f),
         }
     }
-}
-
-// This should be a compile-time static collection but I don't wanna install any crates to see how far I can go
-pub fn get_first_set_table() -> HashMap<&'static str, Vec<Type>> {
-    HashMap::from([
-        ("START", vec![Type::EndOfFile, Type::Class, Type::Function]),
-        ("ARRAYSIZE2", vec![Type::IntNum(0), Type::CloseSqbr]),
-        ("CLASSDECL", vec![Type::Class]),
-        (
-            "EXPR2",
-            vec![
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-            ],
-        ),
-        ("FACTOR2", vec![Type::OpenPar, Type::OpenSqbr]),
-        ("FUNCDEF", vec![Type::Function]),
-        ("FUNCBODY", vec![Type::OpenCubr]),
-        ("FUNCHEAD", vec![Type::Function]),
-        ("FUNCHEADTAIL", vec![Type::ScopeOp, Type::OpenPar]),
-        (
-            "FUNCHEADMEMBERTAIL",
-            vec![Type::Id("".to_owned()), Type::Constructor],
-        ),
-        ("IDNEST2", vec![Type::OpenPar, Type::OpenSqbr]),
-        ("ARRAYOROBJECT", vec![Type::OpenPar, Type::OpenSqbr]),
-        ("LOCALVARDECL", vec![Type::LocalVar]),
-        ("MEMBERFUNCDECL", vec![Type::Function, Type::Constructor]),
-        ("MEMBERFUNCHEAD", vec![Type::Function, Type::Constructor]),
-        ("FPARAMS", vec![Type::Id("".to_owned())]),
-        ("MEMBERVARDECL", vec![Type::Attribute]),
-        ("OPTINHERITS", vec![Type::IsA]),
-        ("PROG", vec![Type::Class, Type::Function]),
-        (
-            "ARITHEXPR",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        (
-            "RELOP",
-            vec![
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-            ],
-        ),
-        ("APARAMSTAIL", vec![Type::Comma]),
-        ("REPTAPARAMS1", vec![Type::Comma]),
-        ("REPTARRAYSIZE", vec![Type::OpenSqbr]),
-        ("REPTFPARAMS3", vec![Type::OpenSqbr]),
-        ("FPARAMSTAIL", vec![Type::Comma]),
-        ("REPTFPARAMS4", vec![Type::Comma]),
-        ("ARRAYSIZE", vec![Type::OpenSqbr]),
-        ("REPTFPARAMSTAIL4", vec![Type::OpenSqbr]),
-        ("REPTINHERITSLIST", vec![Type::Comma]),
-        (
-            "LOCALVARORSTAT",
-            vec![
-                Type::LocalVar,
-                Type::Id("".to_owned()),
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-            ],
-        ),
-        (
-            "REPTLOCALVARORSTAT",
-            vec![
-                Type::LocalVar,
-                Type::Id("".to_owned()),
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-            ],
-        ),
-        (
-            "MEMBERDECL",
-            vec![Type::Attribute, Type::Function, Type::Constructor],
-        ),
-        ("REPTMEMBERDECL", vec![Type::Public, Type::Private]),
-        ("CLASSDECLORFUNCDEF", vec![Type::Class, Type::Function]),
-        ("REPTPROG0", vec![Type::Class, Type::Function]),
-        ("IDNEST", vec![Type::Dot]),
-        ("REPTVARIABLEORFUNCTIONCALL", vec![Type::Dot]),
-        (
-            "RETURNTYPE",
-            vec![
-                Type::Void,
-                Type::Integer,
-                Type::Float,
-                Type::Id("".to_owned()),
-            ],
-        ),
-        ("ADDOP", vec![Type::Plus, Type::Minus, Type::Or]),
-        ("RIGHTRECARITHEXPR", vec![Type::Plus, Type::Minus, Type::Or]),
-        ("MULTOP", vec![Type::Mult, Type::Div, Type::And]),
-        ("SIGN", vec![Type::Plus, Type::Minus]),
-        (
-            "REPTSTATBLOCK1",
-            vec![
-                Type::Id("".to_owned()),
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-            ],
-        ),
-        (
-            "STATEMENT",
-            vec![
-                Type::Id("".to_owned()),
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-            ],
-        ),
-        (
-            "RELEXPR",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        (
-            "STATBLOCK",
-            vec![
-                Type::OpenCubr,
-                Type::Id("".to_owned()),
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-            ],
-        ),
-        ("INDICE", vec![Type::OpenSqbr]),
-        ("STATEMENTIDNEST2", vec![Type::Dot]),
-        ("STATEMENTIDNEST3", vec![Type::Dot, Type::Assign]),
-        ("ASSIGNOP", vec![Type::Assign]),
-        (
-            "EXPR",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        (
-            "STATEMENTIDNEST",
-            vec![Type::Dot, Type::OpenPar, Type::OpenSqbr, Type::Assign],
-        ),
-        (
-            "TERM",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        (
-            "FACTOR",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        ("RIGHTRECTERM", vec![Type::Mult, Type::Div, Type::And]),
-        (
-            "TYPE",
-            vec![Type::Integer, Type::Float, Type::Id("".to_owned())],
-        ),
-        ("VARIABLE", vec![Type::Id("".to_owned())]),
-        ("VARIABLE2", vec![Type::OpenPar, Type::OpenSqbr, Type::Dot]),
-        ("REPTVARIABLE", vec![Type::Dot]),
-        ("VARIDNEST2", vec![Type::OpenPar, Type::OpenSqbr]),
-        (
-            "APARAMS",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        ("VARIDNEST", vec![Type::Dot]),
-        ("REPTIDNEST1", vec![Type::OpenSqbr]),
-        ("VISIBILITY", vec![Type::Public, Type::Private]),
-    ])
-}
-
-pub fn get_follow_set_table() -> HashMap<&'static str, Vec<Type>> {
-    HashMap::from([
-        ("START", vec![]),
-        (
-            "ARRAYSIZE2",
-            vec![Type::OpenSqbr, Type::Semi, Type::ClosePar, Type::Comma],
-        ),
-        (
-            "CLASSDECL",
-            vec![Type::Class, Type::Function, Type::EndOfFile],
-        ),
-        ("EXPR2", vec![Type::Semi, Type::Comma, Type::ClosePar]),
-        (
-            "FACTOR2",
-            vec![
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::Dot,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "FUNCDEF",
-            vec![Type::Class, Type::Function, Type::EndOfFile],
-        ),
-        (
-            "FUNCBODY",
-            vec![Type::Class, Type::Function, Type::EndOfFile],
-        ),
-        ("FUNCHEAD", vec![Type::OpenCubr]),
-        ("FUNCHEADTAIL", vec![Type::OpenCubr]),
-        ("FUNCHEADMEMBERTAIL", vec![Type::OpenCubr]),
-        (
-            "IDNEST2",
-            vec![
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::Dot,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        ("ARRAYOROBJECT", vec![Type::Semi]),
-        (
-            "LOCALVARDECL",
-            vec![
-                Type::LocalVar,
-                Type::Id("".to_owned()),
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-                Type::CloseCubr,
-            ],
-        ),
-        (
-            "MEMBERFUNCDECL",
-            vec![Type::Public, Type::Private, Type::CloseCubr],
-        ),
-        ("MEMBERFUNCHEAD", vec![Type::Semi]),
-        ("FPARAMS", vec![Type::ClosePar]),
-        (
-            "MEMBERVARDECL",
-            vec![Type::Public, Type::Private, Type::CloseCubr],
-        ),
-        ("OPTINHERITS", vec![Type::OpenCubr]),
-        ("PROG", vec![Type::EndOfFile]),
-        (
-            "ARITHEXPR",
-            vec![
-                Type::Semi,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "RELOP",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        ("APARAMSTAIL", vec![Type::Comma, Type::ClosePar]),
-        ("REPTAPARAMS1", vec![Type::ClosePar]),
-        ("REPTARRAYSIZE", vec![Type::Semi]),
-        ("REPTFPARAMS3", vec![Type::ClosePar, Type::Comma]),
-        ("FPARAMSTAIL", vec![Type::Comma, Type::ClosePar]),
-        ("REPTFPARAMS4", vec![Type::ClosePar]),
-        (
-            "ARRAYSIZE",
-            vec![Type::OpenSqbr, Type::Semi, Type::ClosePar, Type::Comma],
-        ),
-        ("REPTFPARAMSTAIL4", vec![Type::Comma, Type::ClosePar]),
-        ("REPTINHERITSLIST", vec![Type::OpenCubr]),
-        (
-            "LOCALVARORSTAT",
-            vec![
-                Type::LocalVar,
-                Type::Id("".to_owned()),
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-                Type::CloseCubr,
-            ],
-        ),
-        ("REPTLOCALVARORSTAT", vec![Type::CloseCubr]),
-        (
-            "MEMBERDECL",
-            vec![Type::Public, Type::Private, Type::CloseCubr],
-        ),
-        ("REPTMEMBERDECL", vec![Type::CloseCubr]),
-        (
-            "CLASSDECLORFUNCDEF",
-            vec![Type::Class, Type::Function, Type::EndOfFile],
-        ),
-        ("REPTPROG0", vec![Type::EndOfFile]),
-        (
-            "IDNEST",
-            vec![
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::Dot,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "REPTVARIABLEORFUNCTIONCALL",
-            vec![
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        ("RETURNTYPE", vec![Type::Semi, Type::OpenCubr]),
-        (
-            "ADDOP",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        (
-            "RIGHTRECARITHEXPR",
-            vec![
-                Type::Semi,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "MULTOP",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        (
-            "SIGN",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        ("REPTSTATBLOCK1", vec![Type::CloseCubr]),
-        (
-            "STATEMENT",
-            vec![
-                Type::Else,
-                Type::Semi,
-                Type::LocalVar,
-                Type::Id("".to_owned()),
-                Type::If,
-                Type::While,
-                Type::Read,
-                Type::Write,
-                Type::Return,
-                Type::CloseCubr,
-            ],
-        ),
-        ("RELEXPR", vec![Type::ClosePar]),
-        ("STATBLOCK", vec![Type::Else, Type::Semi]),
-        (
-            "INDICE",
-            vec![
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::OpenSqbr,
-                Type::Assign,
-                Type::Dot,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        ("STATEMENTIDNEST2", vec![Type::Semi]),
-        ("STATEMENTIDNEST3", vec![Type::Semi]),
-        (
-            "ASSIGNOP",
-            vec![
-                Type::Id("".to_owned()),
-                Type::IntNum(0),
-                Type::FloatNum(0f64),
-                Type::OpenPar,
-                Type::Not,
-                Type::Plus,
-                Type::Minus,
-            ],
-        ),
-        ("EXPR", vec![Type::Semi, Type::Comma, Type::ClosePar]),
-        ("STATEMENTIDNEST", vec![Type::Semi]),
-        (
-            "TERM",
-            vec![
-                Type::Semi,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "FACTOR",
-            vec![
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "RIGHTRECTERM",
-            vec![
-                Type::Semi,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "TYPE",
-            vec![
-                Type::ClosePar,
-                Type::OpenCubr,
-                Type::Comma,
-                Type::OpenPar,
-                Type::OpenSqbr,
-                Type::Semi,
-            ],
-        ),
-        ("VARIABLE", vec![Type::ClosePar]),
-        ("VARIABLE2", vec![Type::ClosePar]),
-        ("REPTVARIABLE", vec![Type::ClosePar]),
-        ("VARIDNEST2", vec![Type::ClosePar, Type::Dot]),
-        ("APARAMS", vec![Type::ClosePar]),
-        ("VARIDNEST", vec![Type::ClosePar, Type::Dot]),
-        (
-            "REPTIDNEST1",
-            vec![
-                Type::Assign,
-                Type::Semi,
-                Type::Mult,
-                Type::Div,
-                Type::And,
-                Type::Dot,
-                Type::CloseSqbr,
-                Type::Eq,
-                Type::NotEq,
-                Type::Lt,
-                Type::Gt,
-                Type::LEq,
-                Type::GEq,
-                Type::Plus,
-                Type::Minus,
-                Type::Or,
-                Type::Comma,
-                Type::ClosePar,
-            ],
-        ),
-        (
-            "VISIBILITY",
-            vec![Type::Attribute, Type::Function, Type::Constructor],
-        ),
-    ])
 }
 
 pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'static>>> {
@@ -665,22 +33,28 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (
             ("START", Type::Function),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("PROG"),
                 // Production::Term(Type::EndOfFile),
+                Production::Action(create_subtree_until_marker(String::from("Program"))),
             ],
         ),
         (
             ("START", Type::Class),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("PROG"),
                 // Production::Term(Type::EndOfFile),
+                Production::Action(create_subtree_until_marker(String::from("Program"))),
             ],
         ),
         (
             ("START", Type::EndOfFile),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("PROG"),
                 Production::Term(Type::EndOfFile),
+                Production::Action(create_subtree_until_marker(String::from("Program"))),
             ],
         ),
         (("ADDOP", Type::Minus), vec![Production::Term(Type::Minus)]),
@@ -695,7 +69,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (
-            ("APARAMS", Type::Id("".to_owned())),
+            ("APARAMS", Type::Id(String::from(""))),
             vec![
                 Production::NonTerm("EXPR"),
                 Production::NonTerm("REPTAPARAMS1"),
@@ -745,13 +119,15 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
             ],
         ),
         (
-            ("ARITHEXPR", Type::Id("".to_owned())),
+            ("ARITHEXPR", Type::Id(String::from(""))),
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
             ],
         ),
         (
@@ -759,6 +135,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
             ],
         ),
         (
@@ -766,6 +143,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
             ],
         ),
         (
@@ -773,6 +151,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
             ],
         ),
         (
@@ -780,6 +159,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
             ],
         ),
         (
@@ -787,23 +167,34 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
             ],
         ),
         (
             ("ARRAYOROBJECT", Type::OpenPar),
             vec![
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
                 Production::Term(Type::ClosePar),
+                Production::Action(create_subtree_until_marker(String::from("Argument List"))),
             ],
         ),
         (
             ("ARRAYOROBJECT", Type::Semi),
-            vec![Production::NonTerm("REPTARRAYSIZE")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTARRAYSIZE"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("ARRAYOROBJECT", Type::OpenSqbr),
-            vec![Production::NonTerm("REPTARRAYSIZE")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTARRAYSIZE"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("ARRAYSIZE", Type::OpenSqbr),
@@ -814,12 +205,16 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         ),
         (
             ("ARRAYSIZE2", Type::CloseSqbr),
-            vec![Production::Term(Type::CloseSqbr)],
+            vec![
+                // Production::Action(create_marker()), TODO: is `private attribute z: float[];` okay?
+                Production::Term(Type::CloseSqbr),
+            ],
         ),
         (
             ("ARRAYSIZE2", Type::IntNum(0)),
             vec![
                 Production::Term(Type::IntNum(0)),
+                Production::Action(create_leaf()),
                 Production::Term(Type::CloseSqbr),
             ],
         ),
@@ -831,12 +226,18 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("CLASSDECL", Type::Class),
             vec![
                 Production::Term(Type::Class),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
+                Production::Action(create_marker()),
                 Production::NonTerm("OPTINHERITS"),
+                Production::Action(create_subtree_until_marker(String::from("Inherits List"))),
                 Production::Term(Type::OpenCubr),
+                Production::Action(create_marker()),
                 Production::NonTerm("REPTMEMBERDECL"),
+                Production::Action(create_subtree_until_marker(String::from("Class Members"))),
                 Production::Term(Type::CloseCubr),
                 Production::Term(Type::Semi),
+                Production::Action(create_subtree_from_n_nodes(String::from("Class"), 3)),
             ],
         ),
         (
@@ -850,50 +251,64 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (
             ("EXPR", Type::OpenPar),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
+                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
             ],
         ),
         (
-            ("EXPR", Type::Id("".to_owned())),
+            ("EXPR", Type::Id(String::from(""))),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
+                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
             ],
         ),
         (
             ("EXPR", Type::Minus),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
+                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
             ],
         ),
         (
             ("EXPR", Type::Plus),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
+                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
             ],
         ),
         (
             ("EXPR", Type::Not),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
+                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
             ],
         ),
         (
             ("EXPR", Type::FloatNum(0f64)),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
+                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
             ],
         ),
         (
             ("EXPR", Type::IntNum(0)),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
+                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
             ],
         ),
         (("EXPR2", Type::ClosePar), vec![]),
@@ -947,35 +362,62 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::NonTerm("ARITHEXPR"),
                 Production::Term(Type::ClosePar),
+                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 1)),
             ],
         ),
         (
-            ("FACTOR", Type::Id("".to_owned())),
+            ("FACTOR", Type::Id(String::from(""))),
             vec![
-                Production::Term(Type::Id("".to_owned())),
+                Production::Action(create_marker()),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR2"),
                 Production::NonTerm("REPTVARIABLEORFUNCTIONCALL"),
+                Production::Action(create_subtree_until_marker(String::from("Factor"))),
             ],
         ),
         (
             ("FACTOR", Type::Minus),
-            vec![Production::NonTerm("SIGN"), Production::NonTerm("FACTOR")],
+            vec![
+                Production::NonTerm("SIGN"),
+                Production::Action(create_leaf()),
+                Production::NonTerm("FACTOR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 2)),
+            ],
         ),
         (
             ("FACTOR", Type::Plus),
-            vec![Production::NonTerm("SIGN"), Production::NonTerm("FACTOR")],
+            vec![
+                Production::NonTerm("SIGN"),
+                Production::Action(create_leaf()),
+                Production::NonTerm("FACTOR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 2)),
+            ],
         ),
         (
             ("FACTOR", Type::Not),
-            vec![Production::Term(Type::Not), Production::NonTerm("FACTOR")],
+            vec![
+                Production::Term(Type::Not),
+                Production::Action(create_leaf()),
+                Production::NonTerm("FACTOR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 2)),
+            ],
         ),
         (
             ("FACTOR", Type::FloatNum(0f64)),
-            vec![Production::Term(Type::FloatNum(0f64))],
+            vec![
+                Production::Term(Type::FloatNum(0f64)),
+                Production::Action(create_leaf()),
+                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 1)),
+            ],
         ),
         (
             ("FACTOR", Type::IntNum(0)),
-            vec![Production::Term(Type::IntNum(0))],
+            vec![
+                Production::Term(Type::IntNum(0)),
+                Production::Action(create_leaf()),
+                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 1)),
+            ],
         ),
         (
             ("FACTOR2", Type::ClosePar),
@@ -985,7 +427,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("FACTOR2", Type::OpenPar),
             vec![
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
                 Production::Term(Type::ClosePar),
             ],
         ),
@@ -1059,12 +503,17 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         ),
         (("FPARAMS", Type::ClosePar), vec![]),
         (
-            ("FPARAMS", Type::Id("".to_owned())),
+            ("FPARAMS", Type::Id(String::from(""))),
             vec![
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::Term(Type::Colon),
                 Production::NonTerm("TYPE"),
+                Production::Action(create_leaf()),
+                Production::Action(create_marker()),
                 Production::NonTerm("REPTFPARAMS3"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_from_n_nodes(String::from("Parameter"), 3)),
                 Production::NonTerm("REPTFPARAMS4"),
             ],
         ),
@@ -1072,16 +521,22 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("FPARAMSTAIL", Type::Comma),
             vec![
                 Production::Term(Type::Comma),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::Term(Type::Colon),
                 Production::NonTerm("TYPE"),
+                Production::Action(create_leaf()),
+                Production::Action(create_marker()),
                 Production::NonTerm("REPTFPARAMSTAIL4"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_from_n_nodes(String::from("Parameter"), 3)),
             ],
         ),
         (
             ("FUNCBODY", Type::OpenCubr),
             vec![
                 Production::Term(Type::OpenCubr),
+                Production::Action(create_marker()),
                 Production::NonTerm("REPTLOCALVARORSTAT"),
                 Production::Term(Type::CloseCubr),
             ],
@@ -1090,26 +545,38 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("FUNCDEF", Type::Function),
             vec![
                 Production::NonTerm("FUNCHEAD"),
+                Production::Action(create_subtree_from_n_nodes(
+                    String::from("Function Head"),
+                    3,
+                )),
                 Production::NonTerm("FUNCBODY"),
+                Production::Action(create_subtree_until_marker(String::from("Function Body"))),
+                Production::Action(create_subtree_from_n_nodes(String::from("Function"), 2)),
             ],
         ),
         (
             ("FUNCHEAD", Type::Function),
             vec![
                 Production::Term(Type::Function),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("FUNCHEADTAIL"),
             ],
         ),
         (
-            ("FUNCHEADMEMBERTAIL", Type::Id("".to_owned())),
+            ("FUNCHEADMEMBERTAIL", Type::Id(String::from(""))),
             vec![
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
+                Production::Action(create_subtree_from_n_nodes(String::from("Scope"), 2)),
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::ReturnType),
                 Production::NonTerm("RETURNTYPE"),
+                Production::Action(create_leaf()),
             ],
         ),
         (
@@ -1117,7 +584,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Term(Type::Constructor),
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
                 Production::Term(Type::ClosePar),
             ],
         ),
@@ -1125,10 +594,13 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("FUNCHEADTAIL", Type::OpenPar),
             vec![
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::ReturnType),
                 Production::NonTerm("RETURNTYPE"),
+                Production::Action(create_leaf()),
             ],
         ),
         (
@@ -1142,7 +614,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("IDNEST", Type::Dot),
             vec![
                 Production::Term(Type::Dot),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("IDNEST2"),
             ],
         ),
@@ -1154,7 +627,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("IDNEST2", Type::OpenPar),
             vec![
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
+                Production::Action(create_subtree_until_marker(String::from("Argument List"))),
                 Production::Term(Type::ClosePar),
             ],
         ),
@@ -1238,15 +713,21 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("LOCALVARDECL", Type::LocalVar),
             vec![
                 Production::Term(Type::LocalVar),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::Term(Type::Colon),
                 Production::NonTerm("TYPE"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("ARRAYOROBJECT"),
                 Production::Term(Type::Semi),
+                Production::Action(create_subtree_from_n_nodes(
+                    String::from("Local Variable Declaration"),
+                    3,
+                )),
             ],
         ),
         (
-            ("LOCALVARORSTAT", Type::Id("".to_owned())),
+            ("LOCALVARORSTAT", Type::Id(String::from(""))),
             vec![Production::NonTerm("STATEMENT")],
         ),
         (
@@ -1303,34 +784,51 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("MEMBERFUNCHEAD", Type::Constructor),
             vec![
                 Production::Term(Type::Constructor),
+                Production::Action(create_leaf()),
                 Production::Term(Type::Colon),
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
                 Production::Term(Type::ClosePar),
+                Production::Action(create_subtree_from_n_nodes(String::from("Constructor"), 3)),
             ],
         ),
         (
             ("MEMBERFUNCHEAD", Type::Function),
             vec![
                 Production::Term(Type::Function),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::Term(Type::Colon),
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::ReturnType),
                 Production::NonTerm("RETURNTYPE"),
+                Production::Action(create_leaf()),
+                Production::Action(create_subtree_from_n_nodes(
+                    String::from("Member Function"),
+                    4,
+                )),
             ],
         ),
         (
             ("MEMBERVARDECL", Type::Attribute),
             vec![
                 Production::Term(Type::Attribute),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::Term(Type::Colon),
                 Production::NonTerm("TYPE"),
+                Production::Action(create_leaf()),
+                Production::Action(create_marker()),
                 Production::NonTerm("REPTARRAYSIZE"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
                 Production::Term(Type::Semi),
+                Production::Action(create_subtree_from_n_nodes(String::from("Attribute"), 4)),
             ],
         ),
         (("MULTOP", Type::And), vec![Production::Term(Type::And)]),
@@ -1341,7 +839,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("OPTINHERITS", Type::IsA),
             vec![
                 Production::Term(Type::IsA),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("REPTINHERITSLIST"),
             ],
         ),
@@ -1362,15 +861,19 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
             ],
         ),
         (
-            ("RELEXPR", Type::Id("".to_owned())),
+            ("RELEXPR", Type::Id(String::from(""))),
             vec![
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
             ],
         ),
         (
@@ -1378,7 +881,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
             ],
         ),
         (
@@ -1386,7 +891,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
             ],
         ),
         (
@@ -1394,7 +901,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
             ],
         ),
         (
@@ -1402,7 +911,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
             ],
         ),
         (
@@ -1410,7 +921,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("RELOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
             ],
         ),
         (("RELOP", Type::GEq), vec![Production::Term(Type::GEq)]),
@@ -1491,12 +1004,13 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("REPTINHERITSLIST", Type::Comma),
             vec![
                 Production::Term(Type::Comma),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("REPTINHERITSLIST"),
             ],
         ),
         (
-            ("REPTLOCALVARORSTAT", Type::Id("".to_owned())),
+            ("REPTLOCALVARORSTAT", Type::Id(String::from(""))),
             vec![
                 Production::NonTerm("LOCALVARORSTAT"),
                 Production::NonTerm("REPTLOCALVARORSTAT"),
@@ -1549,6 +1063,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("REPTMEMBERDECL", Type::Private),
             vec![
                 Production::NonTerm("VISIBILITY"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("MEMBERDECL"),
                 Production::NonTerm("REPTMEMBERDECL"),
             ],
@@ -1557,6 +1072,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("REPTMEMBERDECL", Type::Public),
             vec![
                 Production::NonTerm("VISIBILITY"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("MEMBERDECL"),
                 Production::NonTerm("REPTMEMBERDECL"),
             ],
@@ -1578,7 +1094,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         ),
         (("REPTPROG0", Type::EndOfFile), vec![]),
         (
-            ("REPTSTATBLOCK1", Type::Id("".to_owned())),
+            ("REPTSTATBLOCK1", Type::Id(String::from(""))),
             vec![
                 Production::NonTerm("STATEMENT"),
                 Production::NonTerm("REPTSTATBLOCK1"),
@@ -1652,7 +1168,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (("REPTVARIABLEORFUNCTIONCALL", Type::CloseSqbr), vec![]),
         (("REPTVARIABLEORFUNCTIONCALL", Type::Or), vec![]),
         (
-            ("RETURNTYPE", Type::Id("".to_owned())),
+            ("RETURNTYPE", Type::Id(String::from(""))),
             vec![Production::NonTerm("TYPE")],
         ),
         (
@@ -1674,6 +1190,10 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ADDOP"),
                 Production::NonTerm("TERM"),
+                Production::Action(create_subtree_from_n_nodes(
+                    String::from("RIGHTRECARITHEXPR"),
+                    2,
+                )),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
             ],
         ),
@@ -1682,6 +1202,10 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ADDOP"),
                 Production::NonTerm("TERM"),
+                Production::Action(create_subtree_from_n_nodes(
+                    String::from("RIGHTRECARITHEXPR"),
+                    2,
+                )),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
             ],
         ),
@@ -1698,6 +1222,10 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ADDOP"),
                 Production::NonTerm("TERM"),
+                Production::Action(create_subtree_from_n_nodes(
+                    String::from("RIGHTRECARITHEXPR"),
+                    2,
+                )),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
             ],
         ),
@@ -1716,7 +1244,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("RIGHTRECTERM", Type::And),
             vec![
                 Production::NonTerm("MULTOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RIGHTRECTERM"), 2)),
                 Production::NonTerm("RIGHTRECTERM"),
             ],
         ),
@@ -1724,7 +1254,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("RIGHTRECTERM", Type::Div),
             vec![
                 Production::NonTerm("MULTOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RIGHTRECTERM"), 2)),
                 Production::NonTerm("RIGHTRECTERM"),
             ],
         ),
@@ -1732,7 +1264,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("RIGHTRECTERM", Type::Mult),
             vec![
                 Production::NonTerm("MULTOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("RIGHTRECTERM"), 2)),
                 Production::NonTerm("RIGHTRECTERM"),
             ],
         ),
@@ -1741,7 +1275,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (("SIGN", Type::Minus), vec![Production::Term(Type::Minus)]),
         (("SIGN", Type::Plus), vec![Production::Term(Type::Plus)]),
         (
-            ("STATBLOCK", Type::Id("".to_owned())),
+            ("STATBLOCK", Type::Id(String::from(""))),
             vec![Production::NonTerm("STATEMENT")],
         ),
         (("STATBLOCK", Type::Semi), vec![]),
@@ -1775,9 +1309,11 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (
-            ("STATEMENT", Type::Id("".to_owned())),
+            ("STATEMENT", Type::Id(String::from(""))),
             vec![
-                Production::Term(Type::Id("".to_owned())),
+                Production::Action(create_marker()),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("STATEMENTIDNEST"),
                 Production::Term(Type::Semi),
             ],
@@ -1790,6 +1326,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("EXPR"),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::Semi),
+                Production::Action(create_subtree_from_n_nodes(String::from("Return"), 1)),
             ],
         ),
         (
@@ -1800,6 +1337,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("EXPR"),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::Semi),
+                Production::Action(create_subtree_from_n_nodes(String::from("Write"), 1)),
             ],
         ),
         (
@@ -1810,6 +1348,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("VARIABLE"),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::Semi),
+                Production::Action(create_subtree_from_n_nodes(String::from("Read"), 1)),
             ],
         ),
         (
@@ -1819,7 +1358,10 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::NonTerm("RELEXPR"),
                 Production::Term(Type::ClosePar),
+                Production::Action(create_marker()),
                 Production::NonTerm("STATBLOCK"),
+                Production::Action(create_subtree_until_marker(String::from("While Block"))),
+                Production::Action(create_subtree_from_n_nodes(String::from("While"), 2)),
                 Production::Term(Type::Semi),
             ],
         ),
@@ -1831,18 +1373,26 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RELEXPR"),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::Then),
+                Production::Action(create_marker()),
                 Production::NonTerm("STATBLOCK"),
+                Production::Action(create_subtree_until_marker(String::from("If Block"))),
                 Production::Term(Type::Else),
+                Production::Action(create_marker()),
                 Production::NonTerm("STATBLOCK"),
+                Production::Action(create_subtree_until_marker(String::from("Else Block"))),
                 Production::Term(Type::Semi),
+                Production::Action(create_subtree_from_n_nodes(String::from("If"), 3)),
             ],
         ),
         (
             ("STATEMENTIDNEST", Type::OpenPar),
             vec![
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
                 Production::Term(Type::ClosePar),
+                Production::Action(create_subtree_until_marker(String::from("Function Call"))),
                 Production::NonTerm("STATEMENTIDNEST2"),
             ],
         ),
@@ -1850,27 +1400,36 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("STATEMENTIDNEST", Type::Dot),
             vec![
                 Production::Term(Type::Dot),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("STATEMENTIDNEST"),
             ],
         ),
         (
             ("STATEMENTIDNEST", Type::OpenSqbr),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("INDICE"),
                 Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
                 Production::NonTerm("STATEMENTIDNEST3"),
             ],
         ),
         (
             ("STATEMENTIDNEST", Type::Assign),
-            vec![Production::NonTerm("ASSIGNOP"), Production::NonTerm("EXPR")],
+            vec![
+                Production::NonTerm("ASSIGNOP"),
+                Production::Action(create_subtree_until_marker(String::from("Variable"))),
+                Production::NonTerm("EXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("Assignment"), 2)),
+            ],
         ),
         (
             ("STATEMENTIDNEST2", Type::Dot),
             vec![
                 Production::Term(Type::Dot),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("STATEMENTIDNEST"),
             ],
         ),
@@ -1879,13 +1438,19 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("STATEMENTIDNEST3", Type::Dot),
             vec![
                 Production::Term(Type::Dot),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_leaf()),
                 Production::NonTerm("STATEMENTIDNEST"),
             ],
         ),
         (
             ("STATEMENTIDNEST3", Type::Assign),
-            vec![Production::NonTerm("ASSIGNOP"), Production::NonTerm("EXPR")],
+            vec![
+                Production::NonTerm("ASSIGNOP"),
+                Production::Action(create_subtree_until_marker(String::from("Variable"))),
+                Production::NonTerm("EXPR"),
+                Production::Action(create_subtree_from_n_nodes(String::from("Assignment"), 2)),
+            ],
         ),
         (
             ("TERM", Type::OpenPar),
@@ -1895,7 +1460,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (
-            ("TERM", Type::Id("".to_owned())),
+            ("TERM", Type::Id(String::from(""))),
             vec![
                 Production::NonTerm("FACTOR"),
                 Production::NonTerm("RIGHTRECTERM"),
@@ -1937,8 +1502,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ],
         ),
         (
-            ("TYPE", Type::Id("".to_owned())),
-            vec![Production::Term(Type::Id("".to_owned()))],
+            ("TYPE", Type::Id(String::from(""))),
+            vec![Production::Term(Type::Id(String::from("")))],
         ),
         (("TYPE", Type::Float), vec![Production::Term(Type::Float)]),
         (
@@ -1946,10 +1511,13 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![Production::Term(Type::Integer)],
         ),
         (
-            ("VARIABLE", Type::Id("".to_owned())),
+            ("VARIABLE", Type::Id(String::from(""))),
             vec![
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_marker()),
+                Production::Action(create_leaf()),
                 Production::NonTerm("VARIABLE2"),
+                Production::Action(create_subtree_until_marker(String::from("Variable"))),
             ],
         ),
         (
@@ -1963,22 +1531,36 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("VARIABLE2", Type::OpenPar),
             vec![
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
                 Production::Term(Type::ClosePar),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_from_n_nodes(
+                    String::from("Function Call"),
+                    2,
+                )),
                 Production::NonTerm("VARIDNEST"),
             ],
         ),
         (
             ("VARIABLE2", Type::Dot),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from(
+                    "Indexed Variable",
+                ))),
                 Production::NonTerm("REPTVARIABLE"),
             ],
         ),
         (
             ("VARIABLE2", Type::OpenSqbr),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from(
+                    "Indexed Variable",
+                ))),
                 Production::NonTerm("REPTVARIABLE"),
             ],
         ),
@@ -1986,8 +1568,11 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("VARIDNEST", Type::Dot),
             vec![
                 Production::Term(Type::Dot),
-                Production::Term(Type::Id("".to_owned())),
+                Production::Term(Type::Id(String::from(""))),
+                Production::Action(create_marker()),
+                Production::Action(create_leaf()),
                 Production::NonTerm("VARIDNEST2"),
+                Production::Action(create_subtree_until_marker(String::from("Nested Variable"))),
             ],
         ),
         (
@@ -1998,18 +1583,28 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("VARIDNEST2", Type::OpenPar),
             vec![
                 Production::Term(Type::OpenPar),
+                Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
                 Production::Term(Type::ClosePar),
+                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
                 Production::NonTerm("VARIDNEST"),
             ],
         ),
         (
             ("VARIDNEST2", Type::Dot),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("VARIDNEST2", Type::OpenSqbr),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("VISIBILITY", Type::Private),

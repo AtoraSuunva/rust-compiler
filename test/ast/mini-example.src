@@ -1,0 +1,57 @@
+class POLYNOMIAL isa A, B, C {
+  private attribute z: float[1][2][3];
+  public constructor: (A: integer[4][5], B: integer[6][7], C: float);
+  public function evaluate: (x: float, y: float) => float;
+};
+
+function POLYNOMIAL::evaluate(x: float, y: integer[1][2]) => float
+{
+  localvar foo: integer;
+  localvar result: float[8][9];
+  localvar f1: LINEAR(1 * 2 + 3, 3.5);
+
+  result = 0.0;
+  result = a * x + b;
+
+  write(f1.evaluate(counter, count2));
+
+  read(me);
+  read(my_input(1, 2).bar[9]);
+  read(your_input[3][4]);
+
+  while(counter <= 10)
+  {
+    write(counter);
+    write(f1.evaluate(counter));
+    write(f2.evaluate(counter));
+  };
+
+  arr[66][6+1].foo.bar = arr[j+1];
+
+  my_func(1, 2, 3);
+
+  if (arr[j] > arr[j+1]) then {
+    // swap temp and arr[i]
+    temp = arr[j];
+    arr[j] = arr[j+1];
+    arr[j+1] = temp;
+  } else ;
+
+  return (result);
+}
+
+function main() => void
+{
+  localvar f1: LINEAR(2, 3.5);
+  localvar f2: QUADRATIC(-2.0, 1.0, 0.0);
+  localvar counter: integer;
+
+  counter = 1;
+
+  while(counter <= 10)
+  {
+    write(counter);
+    write(f1.evaluate(counter));
+    write(f2.evaluate(counter));
+  };
+}
