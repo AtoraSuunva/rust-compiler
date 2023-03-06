@@ -373,7 +373,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR2"),
                 Production::NonTerm("REPTVARIABLEORFUNCTIONCALL"),
-                Production::Action(create_subtree_until_marker(String::from("Factor"))),
+                Production::Action(create_subtree_until_marker(String::from("Variable"))),
             ],
         ),
         (
@@ -421,7 +421,11 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         ),
         (
             ("FACTOR2", Type::ClosePar),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::OpenPar),
@@ -435,71 +439,139 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         ),
         (
             ("FACTOR2", Type::Dot),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Semi),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Minus),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Plus),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Comma),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::GEq),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::LEq),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Gt),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Lt),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::NotEq),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Eq),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::And),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Div),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Mult),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::CloseSqbr),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::OpenSqbr),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (
             ("FACTOR2", Type::Or),
-            vec![Production::NonTerm("REPTIDNEST1")],
+            vec![
+                Production::Action(create_marker()),
+                Production::NonTerm("REPTIDNEST1"),
+                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+            ],
         ),
         (("FPARAMS", Type::ClosePar), vec![]),
         (
