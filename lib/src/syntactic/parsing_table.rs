@@ -120,57 +120,64 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (
             ("ARITHEXPR", Type::OpenPar),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
+                Production::Action(create_subtree_until_marker(TreeNode::ArithExpr)),
             ],
         ),
         (
             ("ARITHEXPR", Type::Id(String::from(""))),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
+                Production::Action(create_subtree_until_marker(TreeNode::ArithExpr)),
             ],
         ),
         (
             ("ARITHEXPR", Type::Minus),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
+                Production::Action(create_subtree_until_marker(TreeNode::ArithExpr)),
             ],
         ),
         (
             ("ARITHEXPR", Type::Plus),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
+                Production::Action(create_subtree_until_marker(TreeNode::ArithExpr)),
             ],
         ),
         (
             ("ARITHEXPR", Type::Not),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
+                Production::Action(create_subtree_until_marker(TreeNode::ArithExpr)),
             ],
         ),
         (
             ("ARITHEXPR", Type::FloatNum(0f64)),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
+                Production::Action(create_subtree_until_marker(TreeNode::ArithExpr)),
             ],
         ),
         (
             ("ARITHEXPR", Type::IntNum(0)),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
+                Production::Action(create_subtree_until_marker(TreeNode::ArithExpr)),
             ],
         ),
         (
@@ -1255,6 +1262,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("RIGHTRECARITHEXPR", Type::Minus),
             vec![
                 Production::NonTerm("ADDOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("TERM"),
                 Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecArithExpr, 2)),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
@@ -1264,6 +1272,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("RIGHTRECARITHEXPR", Type::Plus),
             vec![
                 Production::NonTerm("ADDOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("TERM"),
                 Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecArithExpr, 2)),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
@@ -1281,6 +1290,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("RIGHTRECARITHEXPR", Type::Or),
             vec![
                 Production::NonTerm("ADDOP"),
+                Production::Action(create_leaf()),
                 Production::NonTerm("TERM"),
                 Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecArithExpr, 2)),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
