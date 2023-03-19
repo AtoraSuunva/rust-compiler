@@ -4,9 +4,12 @@ use std::{
 };
 
 use crate::{
-    ast::actions::{
-        create_leaf, create_marker, create_subtree_from_n_nodes, create_subtree_until_marker,
-        SemanticAction,
+    ast::{
+        actions::{
+            create_leaf, create_marker, create_subtree_from_n_nodes, create_subtree_until_marker,
+            SemanticAction,
+        },
+        tree_node::TreeNode,
     },
     lexical::tokens::token_type::Type,
 };
@@ -36,7 +39,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("PROG"),
                 // Production::Term(Type::EndOfFile),
-                Production::Action(create_subtree_until_marker(String::from("Program"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Program)),
             ],
         ),
         (
@@ -45,7 +48,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("PROG"),
                 // Production::Term(Type::EndOfFile),
-                Production::Action(create_subtree_until_marker(String::from("Program"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Program)),
             ],
         ),
         (
@@ -54,7 +57,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("PROG"),
                 Production::Term(Type::EndOfFile),
-                Production::Action(create_subtree_until_marker(String::from("Program"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Program)),
             ],
         ),
         (("ADDOP", Type::Minus), vec![Production::Term(Type::Minus)]),
@@ -119,7 +122,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
             ],
         ),
         (
@@ -127,7 +130,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
             ],
         ),
         (
@@ -135,7 +138,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
             ],
         ),
         (
@@ -143,7 +146,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
             ],
         ),
         (
@@ -151,7 +154,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
             ],
         ),
         (
@@ -159,7 +162,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
             ],
         ),
         (
@@ -167,7 +170,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("TERM"),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("ARITHEXPR"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::ArithExpr, 1)),
             ],
         ),
         (
@@ -177,7 +180,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
                 Production::Term(Type::ClosePar),
-                Production::Action(create_subtree_until_marker(String::from("Argument List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ArgumentList)),
             ],
         ),
         (
@@ -185,7 +188,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTARRAYSIZE"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -193,7 +196,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTARRAYSIZE"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -230,14 +233,14 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_leaf()),
                 Production::Action(create_marker()),
                 Production::NonTerm("OPTINHERITS"),
-                Production::Action(create_subtree_until_marker(String::from("Inherits List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::InheritsList)),
                 Production::Term(Type::OpenCubr),
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTMEMBERDECL"),
-                Production::Action(create_subtree_until_marker(String::from("Class Members"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ClassMembers)),
                 Production::Term(Type::CloseCubr),
                 Production::Term(Type::Semi),
-                Production::Action(create_subtree_from_n_nodes(String::from("Class"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Class, 3)),
             ],
         ),
         (
@@ -254,7 +257,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
-                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Expr)),
             ],
         ),
         (
@@ -263,7 +266,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
-                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Expr)),
             ],
         ),
         (
@@ -272,7 +275,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
-                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Expr)),
             ],
         ),
         (
@@ -281,7 +284,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
-                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Expr)),
             ],
         ),
         (
@@ -290,7 +293,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
-                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Expr)),
             ],
         ),
         (
@@ -299,7 +302,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
-                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Expr)),
             ],
         ),
         (
@@ -308,7 +311,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("ARITHEXPR"),
                 Production::NonTerm("EXPR2"),
-                Production::Action(create_subtree_until_marker(String::from("EXPR"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Expr)),
             ],
         ),
         (("EXPR2", Type::ClosePar), vec![]),
@@ -362,7 +365,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::NonTerm("ARITHEXPR"),
                 Production::Term(Type::ClosePar),
-                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Factor, 1)),
             ],
         ),
         (
@@ -373,7 +376,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR2"),
                 Production::NonTerm("REPTVARIABLEORFUNCTIONCALL"),
-                Production::Action(create_subtree_until_marker(String::from("Variable"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Variable)),
             ],
         ),
         (
@@ -382,7 +385,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("SIGN"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Factor, 2)),
             ],
         ),
         (
@@ -391,7 +394,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("SIGN"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Factor, 2)),
             ],
         ),
         (
@@ -400,7 +403,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::Not),
                 Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Factor, 2)),
             ],
         ),
         (
@@ -408,7 +411,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Term(Type::FloatNum(0f64)),
                 Production::Action(create_leaf()),
-                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Factor, 1)),
             ],
         ),
         (
@@ -416,7 +419,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Term(Type::IntNum(0)),
                 Production::Action(create_leaf()),
-                Production::Action(create_subtree_from_n_nodes(String::from("Factor"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Factor, 1)),
             ],
         ),
         (
@@ -424,7 +427,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -433,7 +436,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
                 Production::Term(Type::ClosePar),
             ],
         ),
@@ -442,7 +445,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -450,7 +453,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -458,7 +461,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -466,7 +469,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -474,7 +477,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -482,7 +485,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -490,7 +493,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -498,7 +501,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -506,7 +509,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -514,7 +517,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -522,7 +525,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -530,7 +533,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -538,7 +541,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -546,7 +549,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -554,7 +557,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -562,7 +565,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -570,7 +573,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (("FPARAMS", Type::ClosePar), vec![]),
@@ -584,8 +587,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_leaf()),
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTFPARAMS3"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
-                Production::Action(create_subtree_from_n_nodes(String::from("Parameter"), 3)),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Parameter, 3)),
                 Production::NonTerm("REPTFPARAMS4"),
             ],
         ),
@@ -600,8 +603,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_leaf()),
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTFPARAMSTAIL4"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
-                Production::Action(create_subtree_from_n_nodes(String::from("Parameter"), 3)),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Parameter, 3)),
             ],
         ),
         (
@@ -617,13 +620,10 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("FUNCDEF", Type::Function),
             vec![
                 Production::NonTerm("FUNCHEAD"),
-                Production::Action(create_subtree_from_n_nodes(
-                    String::from("Function Head"),
-                    3,
-                )),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::FunctionHead, 3)),
                 Production::NonTerm("FUNCBODY"),
-                Production::Action(create_subtree_until_marker(String::from("Function Body"))),
-                Production::Action(create_subtree_from_n_nodes(String::from("Function"), 2)),
+                Production::Action(create_subtree_until_marker(TreeNode::FunctionBody)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Function, 2)),
             ],
         ),
         (
@@ -640,11 +640,11 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Term(Type::Id(String::from(""))),
                 Production::Action(create_leaf()),
-                Production::Action(create_subtree_from_n_nodes(String::from("Scope"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Scope, 2)),
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::ReturnType),
                 Production::NonTerm("RETURNTYPE"),
@@ -658,7 +658,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
                 Production::Term(Type::ClosePar),
             ],
         ),
@@ -668,7 +668,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::ReturnType),
                 Production::NonTerm("RETURNTYPE"),
@@ -701,7 +701,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
-                Production::Action(create_subtree_until_marker(String::from("Argument List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ArgumentList)),
                 Production::Term(Type::ClosePar),
             ],
         ),
@@ -792,10 +792,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_leaf()),
                 Production::NonTerm("ARRAYOROBJECT"),
                 Production::Term(Type::Semi),
-                Production::Action(create_subtree_from_n_nodes(
-                    String::from("Local Variable Declaration"),
-                    3,
-                )),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::LocalVarDecl, 3)),
             ],
         ),
         (
@@ -861,9 +858,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
                 Production::Term(Type::ClosePar),
-                Production::Action(create_subtree_from_n_nodes(String::from("Constructor"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::ConstructorFunc, 3)),
             ],
         ),
         (
@@ -876,15 +873,12 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::ReturnType),
                 Production::NonTerm("RETURNTYPE"),
                 Production::Action(create_leaf()),
-                Production::Action(create_subtree_from_n_nodes(
-                    String::from("Member Function"),
-                    4,
-                )),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::MemberFunc, 4)),
             ],
         ),
         (
@@ -898,9 +892,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_leaf()),
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTARRAYSIZE"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
                 Production::Term(Type::Semi),
-                Production::Action(create_subtree_from_n_nodes(String::from("Attribute"), 4)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Attribute, 4)),
             ],
         ),
         (("MULTOP", Type::And), vec![Production::Term(Type::And)]),
@@ -935,7 +929,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RELOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RelExpr, 3)),
             ],
         ),
         (
@@ -945,7 +939,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RELOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RelExpr, 3)),
             ],
         ),
         (
@@ -955,7 +949,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RELOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RelExpr, 3)),
             ],
         ),
         (
@@ -965,7 +959,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RELOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RelExpr, 3)),
             ],
         ),
         (
@@ -975,7 +969,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RELOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RelExpr, 3)),
             ],
         ),
         (
@@ -985,7 +979,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RELOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RelExpr, 3)),
             ],
         ),
         (
@@ -995,7 +989,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("RELOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("ARITHEXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RELEXPR"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RelExpr, 3)),
             ],
         ),
         (("RELOP", Type::GEq), vec![Production::Term(Type::GEq)]),
@@ -1262,10 +1256,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ADDOP"),
                 Production::NonTerm("TERM"),
-                Production::Action(create_subtree_from_n_nodes(
-                    String::from("RIGHTRECARITHEXPR"),
-                    2,
-                )),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecArithExpr, 2)),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
             ],
         ),
@@ -1274,10 +1265,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ADDOP"),
                 Production::NonTerm("TERM"),
-                Production::Action(create_subtree_from_n_nodes(
-                    String::from("RIGHTRECARITHEXPR"),
-                    2,
-                )),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecArithExpr, 2)),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
             ],
         ),
@@ -1294,10 +1282,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::NonTerm("ADDOP"),
                 Production::NonTerm("TERM"),
-                Production::Action(create_subtree_from_n_nodes(
-                    String::from("RIGHTRECARITHEXPR"),
-                    2,
-                )),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecArithExpr, 2)),
                 Production::NonTerm("RIGHTRECARITHEXPR"),
             ],
         ),
@@ -1318,7 +1303,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("MULTOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RIGHTRECTERM"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecTerm, 2)),
                 Production::NonTerm("RIGHTRECTERM"),
             ],
         ),
@@ -1328,7 +1313,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("MULTOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RIGHTRECTERM"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecTerm, 2)),
                 Production::NonTerm("RIGHTRECTERM"),
             ],
         ),
@@ -1338,7 +1323,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("MULTOP"),
                 Production::Action(create_leaf()),
                 Production::NonTerm("FACTOR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("RIGHTRECTERM"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::RightRecTerm, 2)),
                 Production::NonTerm("RIGHTRECTERM"),
             ],
         ),
@@ -1398,7 +1383,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("EXPR"),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::Semi),
-                Production::Action(create_subtree_from_n_nodes(String::from("Return"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Return, 1)),
             ],
         ),
         (
@@ -1409,7 +1394,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("EXPR"),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::Semi),
-                Production::Action(create_subtree_from_n_nodes(String::from("Write"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Write, 1)),
             ],
         ),
         (
@@ -1420,7 +1405,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::NonTerm("VARIABLE"),
                 Production::Term(Type::ClosePar),
                 Production::Term(Type::Semi),
-                Production::Action(create_subtree_from_n_nodes(String::from("Read"), 1)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Read, 1)),
             ],
         ),
         (
@@ -1432,8 +1417,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::ClosePar),
                 Production::Action(create_marker()),
                 Production::NonTerm("STATBLOCK"),
-                Production::Action(create_subtree_until_marker(String::from("While Block"))),
-                Production::Action(create_subtree_from_n_nodes(String::from("While"), 2)),
+                Production::Action(create_subtree_until_marker(TreeNode::WhileBlock)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::While, 2)),
                 Production::Term(Type::Semi),
             ],
         ),
@@ -1447,13 +1432,13 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::Then),
                 Production::Action(create_marker()),
                 Production::NonTerm("STATBLOCK"),
-                Production::Action(create_subtree_until_marker(String::from("If Block"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IfBlock)),
                 Production::Term(Type::Else),
                 Production::Action(create_marker()),
                 Production::NonTerm("STATBLOCK"),
-                Production::Action(create_subtree_until_marker(String::from("Else Block"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ElseBlock)),
                 Production::Term(Type::Semi),
-                Production::Action(create_subtree_from_n_nodes(String::from("If"), 3)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::If, 3)),
             ],
         ),
         (
@@ -1462,9 +1447,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
                 Production::Term(Type::ClosePar),
-                Production::Action(create_subtree_until_marker(String::from("Function Call"))),
+                Production::Action(create_subtree_until_marker(TreeNode::FunctionCall)),
                 Production::NonTerm("STATEMENTIDNEST2"),
             ],
         ),
@@ -1483,7 +1468,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("INDICE"),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
                 Production::NonTerm("STATEMENTIDNEST3"),
             ],
         ),
@@ -1491,9 +1476,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("STATEMENTIDNEST", Type::Assign),
             vec![
                 Production::NonTerm("ASSIGNOP"),
-                Production::Action(create_subtree_until_marker(String::from("Variable"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Variable)),
                 Production::NonTerm("EXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("Assignment"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Assignment, 2)),
             ],
         ),
         (
@@ -1519,9 +1504,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("STATEMENTIDNEST3", Type::Assign),
             vec![
                 Production::NonTerm("ASSIGNOP"),
-                Production::Action(create_subtree_until_marker(String::from("Variable"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Variable)),
                 Production::NonTerm("EXPR"),
-                Production::Action(create_subtree_from_n_nodes(String::from("Assignment"), 2)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Assignment, 2)),
             ],
         ),
         (
@@ -1589,7 +1574,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::Action(create_leaf()),
                 Production::NonTerm("VARIABLE2"),
-                Production::Action(create_subtree_until_marker(String::from("Variable"))),
+                Production::Action(create_subtree_until_marker(TreeNode::Variable)),
             ],
         ),
         (
@@ -1606,11 +1591,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
                 Production::Term(Type::ClosePar),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
-                Production::Action(create_subtree_from_n_nodes(
-                    String::from("Function Call"),
-                    2,
-                )),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::FunctionCall, 2)),
                 Production::NonTerm("VARIDNEST"),
             ],
         ),
@@ -1619,9 +1601,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from(
-                    "Indexed Variable",
-                ))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndexedVar)),
                 Production::NonTerm("REPTVARIABLE"),
             ],
         ),
@@ -1630,9 +1610,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from(
-                    "Indexed Variable",
-                ))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndexedVar)),
                 Production::NonTerm("REPTVARIABLE"),
             ],
         ),
@@ -1644,7 +1622,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::Action(create_leaf()),
                 Production::NonTerm("VARIDNEST2"),
-                Production::Action(create_subtree_until_marker(String::from("Nested Variable"))),
+                Production::Action(create_subtree_until_marker(TreeNode::NestedVar)),
             ],
         ),
         (
@@ -1658,7 +1636,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
                 Production::Action(create_marker()),
                 Production::NonTerm("APARAMS"),
                 Production::Term(Type::ClosePar),
-                Production::Action(create_subtree_until_marker(String::from("Parameter List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::ParameterList)),
                 Production::NonTerm("VARIDNEST"),
             ],
         ),
@@ -1667,7 +1645,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (
@@ -1675,7 +1653,7 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             vec![
                 Production::Action(create_marker()),
                 Production::NonTerm("REPTIDNEST1"),
-                Production::Action(create_subtree_until_marker(String::from("Indice List"))),
+                Production::Action(create_subtree_until_marker(TreeNode::IndiceList)),
             ],
         ),
         (

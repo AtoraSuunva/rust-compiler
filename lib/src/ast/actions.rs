@@ -1,13 +1,11 @@
-use std::{
-    fmt,
-    sync::atomic::{AtomicUsize, Ordering},
-};
-
-use rctree::Node;
+use std::fmt;
 
 use crate::{lexical::tokens::token::Token, syntactic::parsing_table::Production};
 
-use super::nodes::{CodeNode, NodeValue};
+use super::{
+    nodes::{CodeNode, NodeValue, StructNode},
+    tree_node::TreeNode,
+};
 
 pub trait SemanticActionTrait: Fn(&mut Vec<CodeNode>, &Production, &Token) {}
 impl<F> SemanticActionTrait for F where F: Fn(&mut Vec<CodeNode>, &Production, &Token) {}
@@ -24,8 +22,8 @@ pub fn test() {
     println!("Hello from actions!");
     let actions: Vec<SemanticAction> = vec![
         create_leaf(),
-        create_subtree_from_n_nodes(String::from("test tree"), 2),
-        create_subtree_until_marker(String::from("test tree until marker")),
+        create_subtree_from_n_nodes(TreeNode::InheritsList, 2),
+        create_subtree_until_marker(TreeNode::InheritsList),
         create_marker(),
     ];
 
@@ -36,8 +34,6 @@ pub fn test() {
     }
 }
 
-static ID_COUNT: AtomicUsize = AtomicUsize::new(1);
-
 /**
  * Create a new leaf using the last production as a value, if it's a terminal
  */
@@ -45,8 +41,9 @@ pub fn create_leaf() -> SemanticAction {
     Box::new(
         move |stack: &mut Vec<CodeNode>, prev: &Production, token: &Token| match prev {
             Production::Term(_t) => {
-                let id = ID_COUNT.fetch_add(1, Ordering::SeqCst);
-                stack.push(Node::new(NodeValue::Leaf(id, token.token_type.clone())));
+                stack.push(StructNode::new_node(NodeValue::Leaf(
+                    token.token_type.clone(),
+                )));
             }
 
             Production::NonTerm(nt) => {
@@ -66,11 +63,13 @@ pub fn create_leaf() -> SemanticAction {
 /**
  * Pop the last n nodes and create a new subtree using them
  */
-pub fn create_subtree_from_n_nodes(name: String, count: usize) -> SemanticAction {
+pub fn create_subtree_from_n_nodes<F>(name: F, count: usize) -> SemanticAction
+where
+    F: 'static + Fn() -> TreeNode,
+{
     Box::new(
         move |stack: &mut Vec<CodeNode>, _prev: &Production, _token: &Token| {
-            let id = ID_COUNT.fetch_add(1, Ordering::SeqCst);
-            let subtree = Node::new(NodeValue::Tree(id, name.clone()));
+            let subtree = StructNode::new_node(NodeValue::Tree(name()));
 
             for _ in 0..count {
                 match stack.pop() {
@@ -87,16 +86,18 @@ pub fn create_subtree_from_n_nodes(name: String, count: usize) -> SemanticAction
 /**
  * Create a new subtree using all the previous nodes until we reach a Marker node, naming it after the last production
  */
-pub fn create_subtree_until_marker(name: String) -> SemanticAction {
+pub fn create_subtree_until_marker<F>(name: F) -> SemanticAction
+where
+    F: 'static + Fn() -> TreeNode,
+{
     Box::new(
         move |stack: &mut Vec<CodeNode>, _prev: &Production, _token: &Token| {
-            let id = ID_COUNT.fetch_add(1, Ordering::SeqCst);
-            let subtree = Node::new(NodeValue::Tree(id, name.clone()));
+            let subtree = StructNode::new_node(NodeValue::Tree(name()));
 
             loop {
                 match stack.pop() {
                     Some(node) => {
-                        if let NodeValue::Marker = *node.borrow() {
+                        if let NodeValue::Marker = node.borrow().value {
                             break;
                         }
 
@@ -117,7 +118,7 @@ pub fn create_subtree_until_marker(name: String) -> SemanticAction {
 pub fn create_marker() -> SemanticAction {
     Box::new(
         move |stack: &mut Vec<CodeNode>, _prev: &Production, _token: &Token| {
-            stack.push(Node::new(NodeValue::Marker));
+            stack.push(StructNode::new_node(NodeValue::Marker));
         },
     )
 }

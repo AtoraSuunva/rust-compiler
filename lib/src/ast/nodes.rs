@@ -1,15 +1,52 @@
+use std::{
+    mem::discriminant,
+    sync::atomic::{AtomicUsize, Ordering},
+};
+
 use rctree::Node;
 
 use crate::lexical::tokens::token_type::Type;
 
-pub type CodeNode = Node<NodeValue>;
+use super::tree_node::TreeNode;
 
 #[derive(Debug)]
 pub enum NodeValue {
-    Leaf(usize, Type),
-    Tree(usize, String),
+    Leaf(Type),
+    Tree(TreeNode),
     Marker,
 }
+
+impl NodeValue {
+    pub fn eq_variant(&self, other: &NodeValue) -> bool {
+        discriminant(self) == discriminant(other)
+    }
+}
+
+#[derive(Debug)]
+pub struct StructNode {
+    pub id: usize,
+    pub value: NodeValue,
+}
+
+static ID_COUNT: AtomicUsize = AtomicUsize::new(1);
+
+impl StructNode {
+    pub fn new(value: NodeValue) -> Self {
+        let id = if NodeValue::Marker.eq_variant(&value) {
+            0
+        } else {
+            ID_COUNT.fetch_add(1, Ordering::SeqCst)
+        };
+
+        Self { id, value }
+    }
+
+    pub fn new_node(value: NodeValue) -> CodeNode {
+        Node::new(Self::new(value))
+    }
+}
+
+pub type CodeNode = Node<StructNode>;
 
 trait CoolNode {
     fn id(&self) -> usize;
@@ -18,19 +55,15 @@ trait CoolNode {
 
 impl CoolNode for CodeNode {
     fn id(&self) -> usize {
-        match *self.borrow() {
-            NodeValue::Leaf(id, _) => id,
-            NodeValue::Tree(id, _) => id,
-            NodeValue::Marker => 0,
-        }
+        self.borrow().id
     }
 
     fn as_string(&self) -> String {
         let id = self.id();
 
-        let name = match &*self.borrow() {
-            NodeValue::Leaf(_, t) => format!("{:?}", t).replace('\"', "'"),
-            NodeValue::Tree(_, s) => s.clone(),
+        let name = match &self.borrow().value {
+            NodeValue::Leaf(t) => format!("{:?}", t).replace('\"', "'"),
+            NodeValue::Tree(t) => format!("{:?}", t).replace('\"', "'"),
             NodeValue::Marker => String::from("MARKER"),
         };
 

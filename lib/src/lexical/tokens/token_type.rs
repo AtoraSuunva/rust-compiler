@@ -1,6 +1,7 @@
 use std::{
     fmt::Display,
     hash::{Hash, Hasher},
+    mem::discriminant,
 };
 
 use super::error_type::ErrorType;
@@ -97,6 +98,16 @@ impl Type {
             Type::FloatNum(_) => Type::FloatNum(0.0),
             _ => self.clone(),
         }
+    }
+
+    /// Returns true if the variants of the two types have the same variant.
+    ///
+    /// ```rs
+    /// assert!(Type::Id("a").eq_variant(&Type::Id("b"))   == true)
+    /// assert!(Type::Id("a").eq_variant(&Type::IntNum(1)) == false)
+    /// ```
+    pub fn eq_variant(&self, other: &Type) -> bool {
+        discriminant(self) == discriminant(other)
     }
 }
 
