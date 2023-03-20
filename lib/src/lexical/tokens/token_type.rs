@@ -109,6 +109,10 @@ impl Type {
     pub fn eq_variant(&self, other: &Type) -> bool {
         discriminant(self) == discriminant(other)
     }
+
+    pub fn is_literal(&self) -> bool {
+        matches!(self, Type::IntNum(_) | Type::FloatNum(_) | Type::Id(_))
+    }
 }
 
 impl Display for Type {

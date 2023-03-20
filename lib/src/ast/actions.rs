@@ -41,9 +41,10 @@ pub fn create_leaf() -> SemanticAction {
     Box::new(
         move |stack: &mut Vec<CodeNode>, prev: &Production, token: &Token| match prev {
             Production::Term(_t) => {
-                stack.push(StructNode::new_node(NodeValue::Leaf(
-                    token.token_type.clone(),
-                )));
+                stack.push(StructNode::new_node(
+                    NodeValue::Leaf(token.token_type.clone()),
+                    token.clone(),
+                ));
             }
 
             Production::NonTerm(nt) => {
@@ -68,8 +69,8 @@ where
     F: 'static + Fn() -> TreeNode,
 {
     Box::new(
-        move |stack: &mut Vec<CodeNode>, _prev: &Production, _token: &Token| {
-            let subtree = StructNode::new_node(NodeValue::Tree(name()));
+        move |stack: &mut Vec<CodeNode>, _prev: &Production, token: &Token| {
+            let subtree = StructNode::new_node(NodeValue::Tree(name()), token.clone());
 
             for _ in 0..count {
                 match stack.pop() {
@@ -91,8 +92,8 @@ where
     F: 'static + Fn() -> TreeNode,
 {
     Box::new(
-        move |stack: &mut Vec<CodeNode>, _prev: &Production, _token: &Token| {
-            let subtree = StructNode::new_node(NodeValue::Tree(name()));
+        move |stack: &mut Vec<CodeNode>, _prev: &Production, token: &Token| {
+            let subtree = StructNode::new_node(NodeValue::Tree(name()), token.clone());
 
             loop {
                 match stack.pop() {
@@ -117,8 +118,8 @@ where
  */
 pub fn create_marker() -> SemanticAction {
     Box::new(
-        move |stack: &mut Vec<CodeNode>, _prev: &Production, _token: &Token| {
-            stack.push(StructNode::new_node(NodeValue::Marker));
+        move |stack: &mut Vec<CodeNode>, _prev: &Production, token: &Token| {
+            stack.push(StructNode::new_node(NodeValue::Marker, token.clone()));
         },
     )
 }

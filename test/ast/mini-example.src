@@ -4,14 +4,20 @@ class POLYNOMIAL isa A, B, C {
   public function evaluate: (x: float, y: float) => float;
 };
 
+class POLYNOMIAL {
+  public constructor: ();
+};
+
 function POLYNOMIAL::evaluate(x: float, y: integer[1][2]) => float
 {
   localvar foo: integer;
   localvar result: float[8][9];
+  localvar result: integer;
   localvar f1: LINEAR(1 * 2 + 3, 3.5);
 
   result = 0.0;
   result = a * x + b;
+  FOOOO = 3 * 5 > 10;
 
   write(f1.evaluate(counter, count2));
 
@@ -39,6 +45,12 @@ function POLYNOMIAL::evaluate(x: float, y: integer[1][2]) => float
 
   return (result);
 }
+
+function main() => void {
+
+}
+
+function main() => integer {}
 
 function main() => void
 {

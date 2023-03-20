@@ -626,8 +626,9 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
         (
             ("FUNCDEF", Type::Function),
             vec![
+                Production::Action(create_marker()),
                 Production::NonTerm("FUNCHEAD"),
-                Production::Action(create_subtree_from_n_nodes(TreeNode::FunctionHead, 3)),
+                Production::Action(create_subtree_until_marker(TreeNode::FunctionHead)),
                 Production::NonTerm("FUNCBODY"),
                 Production::Action(create_subtree_until_marker(TreeNode::FunctionBody)),
                 Production::Action(create_subtree_from_n_nodes(TreeNode::Function, 2)),
@@ -662,6 +663,8 @@ pub fn get_parsing_table() -> HashMap<(&'static str, Type), Vec<Production<'stat
             ("FUNCHEADMEMBERTAIL", Type::Constructor),
             vec![
                 Production::Term(Type::Constructor),
+                Production::Action(create_leaf()),
+                Production::Action(create_subtree_from_n_nodes(TreeNode::Scope, 2)),
                 Production::Term(Type::OpenPar),
                 Production::Action(create_marker()),
                 Production::NonTerm("FPARAMS"),

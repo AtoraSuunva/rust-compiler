@@ -15,3 +15,5 @@ Cargo.lock
 /test/**/*.outderivation
 /test/**/*.outsyntaxerrors
 /test/**/*.outast
+/test/**/*.outsymboltables
+/test/**/*.outsemanticerrors
