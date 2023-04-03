@@ -9,9 +9,18 @@ use crate::{
 pub type CollectedVisitorResult = Result<(), Vec<String>>;
 pub type VisitorResult = Result<(), String>;
 
+pub const INT_SIZE: usize = 4;
+pub const FLOAT_SIZE: usize = 8;
+
 pub trait Visitor {
     fn visit(&mut self, node: &CodeNode) -> CollectedVisitorResult {
         let mut errors: Vec<String> = Vec::new();
+
+        for child in node.children() {
+            if let Err(e) = self.visit(&child) {
+                errors.extend(e);
+            };
+        }
 
         if let Err(e) = match &node.borrow().value {
             NodeValue::Leaf(l) => self.visit_leaf(node, l),
@@ -20,12 +29,6 @@ pub trait Visitor {
         } {
             errors.push(e);
         };
-
-        for child in node.children() {
-            if let Err(e) = self.visit(&child) {
-                errors.extend(e);
-            };
-        }
 
         if errors.is_empty() {
             Ok(())
@@ -43,7 +46,12 @@ pub trait Visitor {
 
         match tree_node {
             TreeNode::ArgumentList() => self.visit_argument_list(node, children.collect()),
-            TreeNode::ArithExpr() => self.visit_arith_expr(node, children.next().unwrap()),
+            TreeNode::ArithExpr() => self.visit_arith_expr(
+                node,
+                children.next().unwrap(),
+                children.next().unwrap(),
+                children.next().unwrap(),
+            ),
             TreeNode::Assignment() => {
                 self.visit_assignment(node, children.next().unwrap(), children.next().unwrap())
             }
@@ -127,22 +135,14 @@ pub trait Visitor {
                 children.next().unwrap(),
             ),
             TreeNode::Return() => self.visit_return(node, children.next().unwrap()),
-            TreeNode::RightRecArithExpr() => self.visit_right_rec_arith_expr(
-                node,
-                children.next().unwrap().try_into()?,
-                children.next().unwrap(),
-            ),
-            TreeNode::RightRecTerm() => self.visit_right_rec_term(
-                node,
-                children.next().unwrap().try_into()?,
-                children.next().unwrap(),
-            ),
             TreeNode::Scope() => self.visit_scope(
                 node,
                 children.next().unwrap().try_into()?,
                 children.next().unwrap().try_into()?,
             ),
-            TreeNode::Variable() => self.visit_variable(node, children.collect()),
+            TreeNode::Variable() => {
+                self.visit_variable(node, children.next().unwrap(), children.next())
+            }
             TreeNode::While() => {
                 self.visit_while(node, children.next().unwrap(), children.next().unwrap())
             }
@@ -161,7 +161,13 @@ pub trait Visitor {
         Ok(())
     }
 
-    fn visit_arith_expr(&mut self, _node: &CodeNode, _arith_expr: CodeNode) -> VisitorResult {
+    fn visit_arith_expr(
+        &mut self,
+        _node: &CodeNode,
+        _left: CodeNode,
+        _op: CodeNode,
+        _right: CodeNode,
+    ) -> VisitorResult {
         Ok(())
     }
 
@@ -348,29 +354,16 @@ pub trait Visitor {
         Ok(())
     }
 
-    fn visit_right_rec_arith_expr(
-        &mut self,
-        _node: &CodeNode,
-        _op: Type,
-        _expr: CodeNode,
-    ) -> VisitorResult {
-        Ok(())
-    }
-
-    fn visit_right_rec_term(
-        &mut self,
-        _node: &CodeNode,
-        _op: Type,
-        _expr: CodeNode,
-    ) -> VisitorResult {
-        Ok(())
-    }
-
     fn visit_scope(&mut self, _node: &CodeNode, _super: Type, _id: Type) -> VisitorResult {
         Ok(())
     }
 
-    fn visit_variable(&mut self, _node: &CodeNode, _nodes: Vec<CodeNode>) -> VisitorResult {
+    fn visit_variable(
+        &mut self,
+        _node: &CodeNode,
+        _id: CodeNode,
+        _indices: Option<CodeNode>,
+    ) -> VisitorResult {
         Ok(())
     }
 

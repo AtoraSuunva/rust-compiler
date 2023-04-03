@@ -2,6 +2,7 @@ use std::{env, fs, path::Path, process};
 
 use rust_compiler_lib::{
     ast::nodes::{fmt_symbol_table, string_tree},
+    codegen::codegen_visitor::CodegenVisitor,
     lexical::lexer::LexerScanner,
     semantic::{
         symbol_collector::SymbolCollectorVisitor, symbol_visitor::SymbolTableVisitor,
@@ -109,6 +110,20 @@ where
                     fs::write(semantic_err_path, visit_errors.join("\n"))
                         .expect("Failed to write to file");
                 }
+
+                let mut codegen_visitor = CodegenVisitor::new();
+                let res = codegen_visitor.visit(root);
+
+                if let Err(e) = res {
+                    println!("Codegen Errors:\n{}", e.join("\n"));
+                }
+
+                let outcode = format!("{}\nhalt", codegen_visitor.code.trim());
+                let moon_out = path.with_extension("moon");
+
+                println!("Codegen:\n{}", outcode);
+
+                fs::write(moon_out, outcode).expect("Failed to write to file");
             } else {
                 println!("No AST generated!");
             }

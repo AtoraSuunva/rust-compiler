@@ -1,8 +1,9 @@
 use std::{
     cell::RefCell,
     collections::HashMap,
-    fmt::{Display, Formatter},
+    fmt::{Display, Formatter, Write},
     mem::discriminant,
+    rc::Rc,
     sync::atomic::{AtomicUsize, Ordering},
 };
 
@@ -35,52 +36,112 @@ impl Display for NodeValue {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct SymbolTable(pub HashMap<String, Option<SymbolTable>>);
+#[derive(Debug, Clone)]
+pub enum VarType {
+    Integer(Vec<usize>),
+    Float(Vec<usize>),
+    Class,
+    Function,
+}
 
-impl Display for SymbolTable {
+#[derive(Debug, Clone)]
+pub struct SymbolData {
+    pub size: usize,
+    pub offset: usize,
+    pub label: Option<String>,
+    pub table: Option<SymbolTable>,
+    pub var_type: VarType,
+}
+
+impl SymbolData {
+    pub fn new(size: usize, offset: usize, var_type: VarType) -> Self {
+        Self {
+            size,
+            offset,
+            label: None,
+            table: None,
+            var_type,
+        }
+    }
+
+    pub fn new_with_table(
+        size: usize,
+        offset: usize,
+        var_type: VarType,
+        table: SymbolTable,
+    ) -> Self {
+        Self {
+            size,
+            offset,
+            label: None,
+            table: Some(table),
+            var_type,
+        }
+    }
+}
+
+impl Display for SymbolData {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let longest_key = self
-            .0
-            .keys()
-            .map(|s| s.len())
-            .max()
-            .unwrap_or(0)
-            .max("Symbol".len());
-
-        let longest_value = self
-            .0
-            .values()
-            .map(|s| s.as_ref().map(|s| s.0.len()).unwrap_or(0))
-            .max()
-            .unwrap_or(0)
-            .max("-> Symbol Table".len());
-
-        writeln!(
+        write!(
             f,
-            "| {:=^longest_key$} | {:=^longest_value$} |",
-            "Symbol", "Pointer"
+            "size: {}, offset: {}{}",
+            self.size,
+            self.offset,
+            if self.table.is_some() {
+                ", -> Symbol Table"
+            } else {
+                ""
+            }
+        )
+    }
+}
+
+pub type SymbolTable = HashMap<String, Rc<RefCell<SymbolData>>>;
+
+pub fn fmt_symbol_table(table: &SymbolTable) -> Result<String, std::fmt::Error> {
+    let longest_key = table
+        .keys()
+        .map(|s| s.len())
+        .max()
+        .unwrap_or(0)
+        .max(" Symbol ".len());
+
+    let longest_value = table
+        .values()
+        .map(|s| s.borrow().to_string().len())
+        .max()
+        .unwrap_or(0)
+        .max(" Data ".len());
+
+    let mut output = String::new();
+
+    writeln!(
+        output,
+        "| {:=^longest_key$} | {:=^longest_value$} |",
+        " Symbol ", " Data "
+    )?;
+
+    let mut other_tables: Vec<(String, SymbolTable)> = Vec::new();
+
+    for (key, value) in table {
+        writeln!(
+            output,
+            "| {:<longest_key$} | {:<longest_value$} |",
+            key,
+            value.borrow()
         )?;
 
-        let mut other_tables: Vec<(String, SymbolTable)> = Vec::new();
-
-        for (key, value) in &self.0 {
-            write!(f, "| {:<longest_key$} | ", key)?;
-            if let Some(table) = value {
-                other_tables.push((key.clone(), table.clone()));
-                write!(f, "{:^longest_value$}", "-> Symbol Table")?;
-            } else {
-                write!(f, "{:^longest_value$}", "")?;
-            }
-            writeln!(f, " |")?;
+        if let Some(other) = &value.borrow().table {
+            other_tables.push((key.clone(), other.clone()));
         }
-
-        for (key, table) in other_tables {
-            write!(f, "\n{key}:\n{table}")?;
-        }
-
-        Ok(())
     }
+
+    for (key, other) in other_tables {
+        let other_out = fmt_symbol_table(&other)?;
+        write!(output, "\n{key}:\n{other_out}")?;
+    }
+
+    Ok(output)
 }
 
 #[derive(Debug)]
@@ -89,6 +150,7 @@ pub struct StructNode {
     pub value: NodeValue,
     pub token: Token,
     pub symbol_table: RefCell<Option<SymbolTable>>,
+    pub label: Rc<RefCell<Option<String>>>,
 }
 
 static ID_COUNT: AtomicUsize = AtomicUsize::new(1);
@@ -106,6 +168,7 @@ impl StructNode {
             value,
             token,
             symbol_table: RefCell::new(None),
+            label: Rc::new(RefCell::new(None)),
         }
     }
 
