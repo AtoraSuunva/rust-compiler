@@ -24,6 +24,18 @@ impl SymbolCollectorVisitor {
 }
 
 impl Visitor for SymbolCollectorVisitor {
+    fn visit_program(
+        &mut self,
+        node: &CodeNode,
+        _classes_or_funcs: Vec<CodeNode>,
+    ) -> VisitorResult {
+        let node_ref = node.borrow();
+        let mut table_ref = node_ref.symbol_table.borrow_mut();
+        let table = table_ref.get_or_insert_with(Default::default);
+        table.extend(self.global.clone());
+        Ok(())
+    }
+
     fn visit_class(
         &mut self,
         node: &CodeNode,

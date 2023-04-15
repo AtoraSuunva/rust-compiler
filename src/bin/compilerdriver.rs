@@ -118,7 +118,7 @@ where
                     println!("Codegen Errors:\n{}", e.join("\n"));
                 }
 
-                let outcode = format!("{}\nhalt", codegen_visitor.code.trim());
+                let outcode = codegen_visitor.get_code().trim().to_string();
                 let moon_out = path.with_extension("moon");
 
                 println!("Codegen:\n{}", outcode);

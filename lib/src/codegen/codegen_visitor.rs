@@ -12,7 +12,8 @@ use crate::{
 };
 
 pub struct CodegenVisitor {
-    pub code: String,
+    alloc: String,
+    code: String,
     label_count: AtomicUsize,
     literal_labels: HashSet<String>,
 }
@@ -20,7 +21,8 @@ pub struct CodegenVisitor {
 impl CodegenVisitor {
     pub fn new() -> Self {
         Self {
-            code: String::from("entry\n"),
+            alloc: String::from(""),
+            code: String::from(""),
             label_count: AtomicUsize::new(0),
             literal_labels: HashSet::new(),
             // registers: (1..13).map(|r| format!("r{r}",)).collect(),
@@ -29,6 +31,10 @@ impl CodegenVisitor {
 
     pub fn new_temp_label(&self) -> String {
         format!("t{}", self.label_count.fetch_add(1, Ordering::SeqCst))
+    }
+
+    pub fn get_code(&self) -> String {
+        format!("{}\nentry\n{}\nhlt", self.alloc, self.code)
     }
 }
 
@@ -59,7 +65,7 @@ impl Visitor for CodegenVisitor {
         &mut self,
         node: &CodeNode,
         id: Type,
-        _type: Type,
+        type_: Type,
         _indice_or_args: CodeNode,
     ) -> VisitorResult {
         let id = match id {
@@ -71,10 +77,23 @@ impl Visitor for CodegenVisitor {
             .unwrap_or_else(|| panic!("Found no symbol table entry for '{}'!", id));
 
         let temp_label = self.new_temp_label();
-        let size = symbol_data.borrow().size;
+        let mut size = symbol_data.borrow().size;
 
-        self.code.push_str(&format!(
-            "% space for variable {id}\n{temp_label} res {size}\n\n"
+        if size == 0 {
+            // Probably a class
+            let class = match type_ {
+                Type::Id(ref id) => id,
+                _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+            };
+
+            let symbol_data = get_symbol_data(node, class)
+                .unwrap_or_else(|| panic!("Found no symbol table entry for '{}'!", id));
+
+            size = symbol_data.borrow().size;
+        }
+
+        self.alloc.push_str(&format!(
+            "% space for variable {id}\n{temp_label} res {size}\n"
         ));
 
         symbol_data.borrow_mut().label = Some(temp_label.clone());
@@ -107,12 +126,13 @@ impl Visitor for CodegenVisitor {
         let (key, size, lit, bytes) = get_literal_label(&factor);
 
         if !self.literal_labels.contains(&key) {
-            self.code.push_str(&format!("% space for literal {lit}\n"));
+            self.alloc.push_str(&format!("% space for literal {lit}\n"));
 
             if size == INT_SIZE {
-                self.code.push_str(&format!("{key} res {size}\n"));
-                self.code.push_str(&format!("addi r14,r0,{lit}\n"));
-                self.code.push_str(&format!("sw {key}(r0),r14\n\n"));
+                self.alloc.push_str(&format!("{key} res {size}\n"));
+                self.code.push_str(&format!("% assign literal {lit}\n"));
+                self.code.push_str(&format!("addi r14, r0,{lit}\n"));
+                self.code.push_str(&format!("sw {key}(r0), r14\n\n"));
             } else {
                 let bytes_str = bytes
                     .iter()
@@ -120,7 +140,7 @@ impl Visitor for CodegenVisitor {
                     .collect::<Vec<String>>()
                     .join(",");
 
-                self.code.push_str(&format!("{key} db {}\n\n", bytes_str));
+                self.alloc.push_str(&format!("{key} db {}\n", bytes_str));
             }
 
             self.literal_labels.insert(key.clone());
@@ -155,13 +175,42 @@ impl Visitor for CodegenVisitor {
         let temp_label = self.new_temp_label();
 
         self.code.push_str("% arith expression\n");
-        self.code.push_str(&format!("lw r1,{left_label}(r0)\n"));
-        self.code.push_str(&format!("lw r2,{right_label}(r0)\n"));
-        self.code.push_str(&format!("{temp_label} res 4\n"));
-        self.code.push_str(&format!("{operand} r3,r1,r2\n"));
-        self.code.push_str(&format!("sw {temp_label}(r0),r3\n\n"));
+        self.code.push_str(&format!("lw r1, {left_label}(r0)\n"));
+        self.code.push_str(&format!("lw r2, {right_label}(r0)\n"));
+        self.alloc.push_str(&format!(
+            "% space for arith expression\n{temp_label} res 4\n"
+        ));
+        self.code.push_str(&format!("{operand} r3, r1, r2\n"));
+        self.code.push_str(&format!("sw {temp_label}(r0), r3\n\n"));
 
         node.borrow().label.borrow_mut().replace(temp_label);
+        Ok(())
+    }
+
+    fn visit_assignment(
+        &mut self,
+        _node: &CodeNode,
+        variable: CodeNode,
+        expr: CodeNode,
+    ) -> VisitorResult {
+        // Variables store their labels
+        let variable_label = variable.borrow().label.borrow().clone().unwrap();
+
+        // expr labels are stored in the children (either a Factor or an ArithExpr)
+        let expr_label = expr
+            .first_child()
+            .unwrap()
+            .borrow()
+            .label
+            .borrow()
+            .clone()
+            .unwrap();
+
+        self.code.push_str("% assignment\n");
+        self.code.push_str(&format!("lw r1,{expr_label}(r0)\n"));
+        self.code
+            .push_str(&format!("sw {variable_label}(r0), r1\n\n"));
+
         Ok(())
     }
 }

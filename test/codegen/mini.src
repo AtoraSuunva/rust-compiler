@@ -1,7 +1,16 @@
-function main() => void {
+class QUADRATIC {
+  private attribute a: float;
+  private attribute b: float;
+  private attribute c: float;
+  public  constructor: (A: float, B: float, C: float);
+  public  function evaluate: (x: float) => float;
+};
+
+function main(param: QUADRATIC[2]) => void {
   localvar x: integer;
   localvar y: float;
   localvar z: integer[4][2][1];
+  localvar q: QUADRATIC(1, 2, 3);
   x = 1;
   y = 2.1;
 
