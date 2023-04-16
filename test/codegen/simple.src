@@ -5,8 +5,21 @@ function main() => void {
   y = 2;
   x = 3 + x * y;
 
+  read(y);
+  write(y);
+
+  write(11111);
+
   while (x < 10) {
     write(x);
     x = x + 1;
+  };
+
+  if (y < x) then {
+    write(22222);
+    write(y);
+  } else {
+    write(23333);
+    write(x);
   };
 }

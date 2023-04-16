@@ -94,9 +94,12 @@ pub trait Visitor {
                     .map(|c| c.try_into())
                     .map_or(Ok(None), |r| r.map(Some))?,
             ),
-            TreeNode::If() => {
-                self.visit_if(node, children.next().unwrap(), children.next().unwrap())
-            }
+            TreeNode::If() => self.visit_if(
+                node,
+                children.next().unwrap(),
+                children.next().unwrap(),
+                children.next().unwrap(),
+            ),
             TreeNode::IfBlock() => self.visit_if_block(node, children.collect()),
             TreeNode::IndexedVar() => self.visit_indexed_var(node, children.collect()),
             TreeNode::IndiceList() => self.visit_indice_list(node, children.collect()),
@@ -264,6 +267,7 @@ pub trait Visitor {
         _node: &CodeNode,
         _condition: CodeNode,
         _if_block: CodeNode,
+        _else_block: CodeNode,
     ) -> VisitorResult {
         Ok(())
     }

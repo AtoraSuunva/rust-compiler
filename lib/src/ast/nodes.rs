@@ -179,7 +179,9 @@ pub struct StructNode {
     pub value: NodeValue,
     pub token: Token,
     pub symbol_table: RefCell<Option<SymbolTable>>,
+
     pub label: Rc<RefCell<Option<String>>>,
+    pub code: Rc<RefCell<Option<String>>>,
 }
 
 static ID_COUNT: AtomicUsize = AtomicUsize::new(1);
@@ -198,6 +200,7 @@ impl StructNode {
             token,
             symbol_table: RefCell::new(None),
             label: Rc::new(RefCell::new(None)),
+            code: Rc::new(RefCell::new(None)),
         }
     }
 

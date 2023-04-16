@@ -1,0 +1,19 @@
+function main() => void {
+  localvar x: integer;
+  localvar y: integer;
+
+  x = 0;
+  y = 10;
+
+  while (x < 10) {
+    write(x);
+    while (y < 20) {
+      write(y);
+      y = y + 1;
+      if (y == 20) then {
+        write(99);
+      } else;
+    }
+    x = x + 1;
+  }
+}
