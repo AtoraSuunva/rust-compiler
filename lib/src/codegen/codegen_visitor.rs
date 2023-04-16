@@ -74,7 +74,7 @@ impl Visitor for CodegenVisitor {
         };
 
         let symbol_data = get_symbol_data(node, id)
-            .unwrap_or_else(|| panic!("Found no symbol table entry for '{}'!", id));
+            .ok_or_else(|| format!("Found no symbol table entry for '{}'!", id))?;
 
         let temp_label = self.new_temp_label();
         let mut size = symbol_data.borrow().size;
@@ -87,7 +87,7 @@ impl Visitor for CodegenVisitor {
             };
 
             let symbol_data = get_symbol_data(node, class)
-                .unwrap_or_else(|| panic!("Found no symbol table entry for '{}'!", id));
+                .ok_or_else(|| format!("Found no symbol table entry for '{}'!", id))?;
 
             size = symbol_data.borrow().size;
         }
@@ -114,9 +114,13 @@ impl Visitor for CodegenVisitor {
         };
 
         let symbol_data = get_symbol_data(node, id)
-            .unwrap_or_else(|| panic!("Found no symbol table entry for '{}'!", id));
+            .ok_or_else(|| format!("Found no symbol table entry for '{}'!", id))?;
 
-        let label = symbol_data.borrow().label.clone().unwrap();
+        let label = symbol_data
+            .borrow()
+            .label
+            .clone()
+            .ok_or_else(|| format!("Found no label for '{}'!", id))?;
 
         node.borrow().label.borrow_mut().replace(label);
         Ok(())
@@ -158,8 +162,18 @@ impl Visitor for CodegenVisitor {
         op: CodeNode,
         right: CodeNode,
     ) -> VisitorResult {
-        let left_label = left.borrow().label.borrow().clone().unwrap();
-        let right_label = right.borrow().label.borrow().clone().unwrap();
+        let left_label = left
+            .borrow()
+            .label
+            .borrow()
+            .clone()
+            .ok_or_else(|| format!("Expected a label at {}", left))?;
+        let right_label = right
+            .borrow()
+            .label
+            .borrow()
+            .clone()
+            .ok_or_else(|| format!("Expected a label at {}", right))?;
 
         let operand = match op.borrow().value {
             NodeValue::Leaf(ref leaf) => match leaf {
@@ -167,9 +181,9 @@ impl Visitor for CodegenVisitor {
                 Type::Minus => "sub",
                 Type::Mult => "mul",
                 Type::Div => "div",
-                _ => panic!("Expected operator!"),
+                _ => return Err(format!("Expected operator at {}!", op)),
             },
-            _ => panic!("Expected operator!"),
+            _ => return Err(format!("Expected operator at {}!", op)),
         };
 
         let temp_label = self.new_temp_label();
@@ -189,12 +203,17 @@ impl Visitor for CodegenVisitor {
 
     fn visit_assignment(
         &mut self,
-        _node: &CodeNode,
+        node: &CodeNode,
         variable: CodeNode,
         expr: CodeNode,
     ) -> VisitorResult {
         // Variables store their labels
-        let variable_label = variable.borrow().label.borrow().clone().unwrap();
+        let variable_label = variable
+            .borrow()
+            .label
+            .borrow()
+            .clone()
+            .ok_or_else(|| format!("Expected label at {}!", node))?;
 
         // expr labels are stored in the children (either a Factor or an ArithExpr)
         let expr_label = expr

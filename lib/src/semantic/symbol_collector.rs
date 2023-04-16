@@ -41,7 +41,7 @@ impl Visitor for SymbolCollectorVisitor {
         node: &CodeNode,
         id: Type,
         _inherits: CodeNode,
-        members: CodeNode,
+        _members: CodeNode,
     ) -> VisitorResult {
         let class_name = match id {
             Type::Id(id) => id,
@@ -51,10 +51,6 @@ impl Visitor for SymbolCollectorVisitor {
         let node_ref = node.borrow();
         let mut table_ref = node_ref.symbol_table.borrow_mut();
         let table = table_ref.get_or_insert_with(Default::default);
-
-        if let Some(members_table) = members.borrow().symbol_table.borrow().clone() {
-            table.extend(members_table);
-        }
 
         if (self.global).contains_key(&class_name) {
             return Err(format!(
@@ -67,11 +63,11 @@ impl Visitor for SymbolCollectorVisitor {
 
         // Then add the class to the global table:
         self.global.insert(
-            class_name,
+            class_name.clone(),
             Rc::new(RefCell::new(SymbolData::new_with_table(
                 size,
                 0,
-                VarType::Class,
+                VarType::Class(class_name),
                 table.clone(),
             ))),
         );
@@ -85,47 +81,60 @@ impl Visitor for SymbolCollectorVisitor {
         let table = table_ref.get_or_insert_with(Default::default);
         let head_ref = head.borrow();
         let head_table = head_ref.symbol_table.borrow();
-
         let mut size: usize = 0;
 
-        for child in body.children() {
-            if let NodeValue::Tree(TreeNode::LocalVarDecl()) = &child.borrow().value {
-                if let Some(var_table) = child.borrow().symbol_table.borrow().clone() {
-                    let key = var_table
-                        .keys()
-                        .next()
-                        .unwrap()
-                        .clone()
-                        .split(':')
-                        .next()
-                        .unwrap()
-                        .to_string();
+        let mut errors: Vec<String> = vec![];
 
-                    if table.keys().any(|k| *k.split(':').next().unwrap() == key) {
-                        return Err(format!(
-                            "Variable '{}' already defined! Defined again at {}",
-                            key, child
-                        ));
-                    };
+        let (func_name, _) = head_table
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|(_, value)| value.borrow().var_type == VarType::Function)
+            .ok_or("Function not found in head table")?;
 
-                    size += var_table.values().fold(0, |acc, x| acc + x.borrow().size);
+        let (return_name, return_type) = head_table
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|(k, _)| k == &"_return")
+            .ok_or("Function return type not found in head table")?;
 
-                    // Add localvar decl info
-                    table.extend(var_table);
-                }
-            }
-        }
-
-        let (func_name, func_data) = head_table.as_ref().unwrap().iter().next().unwrap();
+        table.insert(return_name.clone(), return_type.clone());
 
         if (self.global).contains_key(func_name) {
-            return Err(format!(
+            errors.push(format!(
                 "Function '{}' already defined! Defined again at {}",
                 func_name, node
             ));
         }
 
-        size += func_data.borrow().size;
+        let param_list = head.children().nth(1).unwrap();
+        let param_list_ref = param_list.borrow();
+
+        if let Some(param_table) = param_list_ref.symbol_table.borrow().clone() {
+            size += param_table.values().fold(0, |acc, x| acc + x.borrow().size);
+            table.extend(param_table);
+        }
+
+        for child in body.children() {
+            if let NodeValue::Tree(TreeNode::LocalVarDecl()) = &child.borrow().value {
+                if let Some(var_table) = child.borrow().symbol_table.borrow().clone() {
+                    let (key, value) = var_table.iter().next().unwrap();
+
+                    if table.contains_key(key) {
+                        errors.push(format!(
+                            "Variable '{}' already defined in '{}'! Defined again at {}",
+                            key, func_name, child
+                        ));
+                    };
+
+                    size += value.borrow().size;
+
+                    // Add localvar decl info
+                    table.insert(key.clone(), value.clone());
+                }
+            }
+        }
 
         // Then add the func to the global table:
         self.global.insert(
@@ -137,6 +146,10 @@ impl Visitor for SymbolCollectorVisitor {
                 table.clone(),
             ))),
         );
+
+        if !errors.is_empty() {
+            return Err(errors.join("\n"));
+        }
 
         Ok(())
     }

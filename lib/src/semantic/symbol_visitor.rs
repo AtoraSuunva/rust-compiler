@@ -1,4 +1,9 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    rc::Rc,
+    sync::atomic::{AtomicIsize, Ordering},
+};
 
 use crate::{
     ast::{
@@ -10,32 +15,18 @@ use crate::{
 
 use super::visitor::{Visitor, VisitorResult, FLOAT_SIZE, INT_SIZE};
 
-// enum Symbols {
-//     Class {
-//         name: String,
-//         inherits: Vec<String>,
-//     },
-//     Function {
-//         name: String,
-//         params: Vec<String>,
-//         return_type: Option<Type>,
-//     },
-//     Variable {
-//         name: String,
-//         type_: Type,
-//     },
-// }
-
 type InheritsMap = HashMap<String, Vec<String>>;
 
 pub struct SymbolTableVisitor {
     inherits: InheritsMap,
+    offset: AtomicIsize,
 }
 
 impl SymbolTableVisitor {
     pub fn new() -> Self {
         Self {
             inherits: InheritsMap::new(),
+            offset: AtomicIsize::new(0),
         }
     }
 }
@@ -52,7 +43,7 @@ impl Visitor for SymbolTableVisitor {
         node: &CodeNode,
         id: Type,
         inherits: CodeNode,
-        _members: CodeNode,
+        members: CodeNode,
     ) -> VisitorResult {
         let class_name = match id {
             Type::Id(id) => id,
@@ -90,6 +81,16 @@ impl Visitor for SymbolTableVisitor {
             }
         }
 
+        let node_ref = node.borrow();
+        let mut table_ref = node_ref.symbol_table.borrow_mut();
+        let table = table_ref.get_or_insert_with(Default::default);
+
+        if let Some(members_table) = members.borrow().symbol_table.borrow().clone() {
+            table.extend(members_table);
+        }
+
+        // Reset the offset counter
+        self.offset.store(0, Ordering::SeqCst);
         Ok(())
     }
 
@@ -134,7 +135,15 @@ impl Visitor for SymbolTableVisitor {
                     } else if type_ == Type::Float {
                         VarType::Float(indices)
                     } else {
-                        VarType::Class
+                        match type_ {
+                            Type::Id(class_name) => VarType::Class(class_name),
+                            _ => {
+                                return Err(format!(
+                                    "Expected class identifier at '{}'!",
+                                    node_ref.value
+                                ))
+                            }
+                        }
                     };
 
                     Ok((size, id, var_type))
@@ -201,6 +210,99 @@ impl Visitor for SymbolTableVisitor {
         Ok(())
     }
 
+    fn visit_function(
+        &mut self,
+        _node: &CodeNode,
+        _head: CodeNode,
+        _body: CodeNode,
+    ) -> VisitorResult {
+        self.offset.store(0, Ordering::SeqCst);
+        Ok(())
+    }
+
+    fn visit_parameter(
+        &mut self,
+        node: &CodeNode,
+        id: Type,
+        type_: Type,
+        indices: CodeNode,
+    ) -> VisitorResult {
+        let var_name = match id {
+            Type::Id(id) => id,
+            _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+        };
+
+        let size: usize;
+        let offset: isize;
+        let var_type: VarType;
+
+        let var_key = match &indices.borrow().value {
+            NodeValue::Tree(TreeNode::IndiceList()) => {
+                let indices = indices
+                    .children()
+                    .map(|num| -> Result<usize, String> {
+                        if let NodeValue::Leaf(Type::IntNum(n)) = &num.borrow().value {
+                            usize::try_from(*n).map_err(|_| "Expected usize!".to_string())
+                        } else {
+                            Err("Expected number!".to_string())
+                        }
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                let indice_mult: usize = indices.iter().product();
+                size = get_type_size(&type_) * indice_mult.max(1);
+                offset = -self.offset.fetch_add(size as isize, Ordering::SeqCst);
+
+                var_type = if type_ == Type::Integer {
+                    VarType::Integer(indices)
+                } else if type_ == Type::Float {
+                    VarType::Float(indices)
+                } else {
+                    match type_ {
+                        Type::Id(class_name) => VarType::Class(class_name),
+                        _ => return Err(format!("Expected class identifier at '{}'!", var_name)),
+                    }
+                };
+
+                var_name
+            }
+            _ => {
+                return Err(format!(
+                    "Expected indice list at '{}'!",
+                    node.borrow().value
+                ))
+            }
+        };
+
+        let node_ref = node.borrow();
+        let mut table_ref = node_ref.symbol_table.borrow_mut();
+        let table = table_ref.get_or_insert_with(Default::default);
+        table.insert(
+            var_key,
+            Rc::new(RefCell::new(SymbolData::new(size, offset, var_type))),
+        );
+
+        Ok(())
+    }
+
+    fn visit_parameter_list(&mut self, node: &CodeNode, params: Vec<CodeNode>) -> VisitorResult {
+        let node_ref = node.borrow();
+        let mut table_ref = node_ref.symbol_table.borrow_mut();
+        let table = table_ref.get_or_insert_with(Default::default);
+
+        for param in params {
+            let param_ref = param.borrow();
+            let mut param_table_ref = param_ref.symbol_table.borrow_mut();
+            let param_table = param_table_ref.get_or_insert_with(Default::default);
+
+            for (key, value) in param_table.iter() {
+                table.insert(key.clone(), value.clone());
+            }
+        }
+
+        Ok(())
+    }
+
     fn visit_function_head(
         &mut self,
         node: &CodeNode,
@@ -208,6 +310,10 @@ impl Visitor for SymbolTableVisitor {
         param_list: CodeNode,
         return_type: Option<Type>,
     ) -> VisitorResult {
+        let node_ref = node.borrow();
+        let mut table_ref = node_ref.symbol_table.borrow_mut();
+        let table = table_ref.get_or_insert_with(Default::default);
+
         let func_name = match &id.borrow().value {
             NodeValue::Leaf(Type::Id(id)) => id.clone(),
             NodeValue::Tree(t) => match t {
@@ -227,59 +333,47 @@ impl Visitor for SymbolTableVisitor {
             _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
         };
 
+        let mut fmt_params: Vec<Rc<RefCell<SymbolData>>> = vec![];
         let mut size = 0;
 
-        let param_list = param_list
-            .children()
-            .map(|param| -> Result<String, String> {
-                if let NodeValue::Tree(TreeNode::Parameter()) = &param.borrow().value {
-                    let mut children = param.children();
-                    let type_ = match children.nth(1).unwrap().borrow().value.clone() {
-                        NodeValue::Leaf(l) => Ok(l),
-                        _ => Err("Expected Leaf!"),
-                    }?;
+        if let Some(param_table) = param_list.borrow().symbol_table.borrow().clone() {
+            for (_, value) in param_table.iter() {
+                fmt_params.push(value.clone());
+                size += value.borrow().size;
+            }
+            table.extend(param_table);
+        }
 
-                    let indices = children
-                        .next()
-                        .unwrap()
-                        .children()
-                        .map(|num| -> Result<usize, String> {
-                            if let NodeValue::Leaf(Type::IntNum(n)) = &num.borrow().value {
-                                usize::try_from(*n).map_err(|_| "Expected usize!".to_string())
-                            } else {
-                                Err("Expected number!".to_string())
-                            }
-                        })
-                        .collect::<Result<Vec<_>, _>>()?;
+        if let Some(t) = return_type {
+            let return_size = get_type_size(&t);
+            let offset = -self
+                .offset
+                .fetch_add(return_size as isize, Ordering::SeqCst);
 
-                    let indice_mult: usize = indices.iter().product();
-                    size += get_type_size(&type_) * indice_mult.max(1);
+            table.insert(
+                String::from("_return"),
+                Rc::new(RefCell::new(SymbolData::new(
+                    return_size,
+                    offset,
+                    match t {
+                        Type::Integer => VarType::Integer(vec![]),
+                        Type::Float => VarType::Float(vec![]),
+                        Type::Id(id) => VarType::Class(id),
+                        Type::Void => VarType::Void,
+                        _ => return Err(format!("Expected type at '{}'!", node.borrow().value)),
+                    },
+                ))),
+            );
+        }
 
-                    let display_indices = indices
-                        .iter()
-                        .map(|i| format!("[{i}]"))
-                        .collect::<Vec<_>>()
-                        .join("");
+        fmt_params.sort_by(|a, b| b.borrow().offset.cmp(&a.borrow().offset));
+        let fmt_params = fmt_params
+            .iter()
+            .map(|s| s.borrow().var_type.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let func_signature = format!("{func_name}({fmt_params})");
 
-                    Ok(format!("{type_}{display_indices}"))
-                } else {
-                    Err("Expected parameter node!".to_string())
-                }
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let param_list = param_list.join(", ");
-
-        let return_type = match return_type {
-            Some(t) => format!(" => {}", t),
-            None => "".to_string(),
-        };
-
-        let func_signature = format!("function: {func_name}({param_list}){return_type}");
-
-        let node_ref = node.borrow();
-        let mut table_ref = node_ref.symbol_table.borrow_mut();
-        let table = table_ref.get_or_insert_with(Default::default);
         table.insert(
             func_signature,
             Rc::new(RefCell::new(SymbolData::new(size, 0, VarType::Function))),
@@ -300,8 +394,8 @@ impl Visitor for SymbolTableVisitor {
             _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
         };
 
-        let mut size: usize = 0;
-        let mut var_type: VarType = VarType::Class;
+        let size: usize;
+        let var_type: VarType;
 
         let var_key = match &indice_or_args.borrow().value {
             NodeValue::Tree(t) => match t {
@@ -318,21 +412,19 @@ impl Visitor for SymbolTableVisitor {
                         .collect::<Result<Vec<_>, _>>()?;
 
                     let indice_mult: usize = indices.iter().product();
-                    // let display_indices = indices
-                    //     .iter()
-                    //     .map(|i| format!("[{i}]"))
-                    //     .collect::<Vec<_>>()
-                    //     .join("");
-
                     size = get_type_size(&type_) * indice_mult.max(1);
-                    // format!("localvar {var_name}: {type_}{display_indices}")
 
                     var_type = if type_ == Type::Integer {
                         VarType::Integer(indices)
                     } else if type_ == Type::Float {
                         VarType::Float(indices)
                     } else {
-                        VarType::Class
+                        match type_ {
+                            Type::Id(class_name) => VarType::Class(class_name),
+                            _ => {
+                                return Err(format!("Expected class identifier at '{}'!", var_name))
+                            }
+                        }
                     };
 
                     var_name
@@ -356,8 +448,10 @@ impl Visitor for SymbolTableVisitor {
                     // let args = args.join(", ");
                     // println!("args: {}", args);
 
-                    // TODO: size = <class_size>
+                    size = 0;
+
                     if let Type::Id(_id) = &type_ {
+                        var_type = VarType::Class(_id.clone());
                         var_name
                     } else {
                         return Err(format!("Expected identifier at '{}'!", node.borrow().value));
@@ -373,12 +467,14 @@ impl Visitor for SymbolTableVisitor {
             _ => return Err(format!("Expected Tree at '{}'!", node.borrow().value)),
         };
 
+        let offset = -self.offset.fetch_add(size as isize, Ordering::SeqCst);
+
         let node_ref = node.borrow();
         let mut table_ref = node_ref.symbol_table.borrow_mut();
         let table = table_ref.get_or_insert_with(Default::default);
         table.insert(
             var_key,
-            Rc::new(RefCell::new(SymbolData::new(size, 0, var_type))),
+            Rc::new(RefCell::new(SymbolData::new(size, offset, var_type))),
         );
 
         Ok(())

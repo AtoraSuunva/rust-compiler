@@ -6,7 +6,7 @@ class QUADRATIC {
   public  function evaluate: (x: float) => float;
 };
 
-function main(param: QUADRATIC[2]) => void {
+function main(n: integer, m: float) => void {
   localvar x: integer;
   localvar y: float;
   localvar z: integer[4][2][1];
@@ -20,4 +20,8 @@ function main(param: QUADRATIC[2]) => void {
     write(x);
     x = x + 1;
   };
+}
+
+function add(a: integer, b: integer) => integer {
+//  a = a + b;
 }

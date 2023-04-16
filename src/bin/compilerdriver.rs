@@ -121,7 +121,8 @@ where
                 let outcode = codegen_visitor.get_code().trim().to_string();
                 let moon_out = path.with_extension("moon");
 
-                println!("Codegen:\n{}", outcode);
+                // println!("Codegen:\n{}", outcode);
+                println!("Code generated!");
 
                 fs::write(moon_out, outcode).expect("Failed to write to file");
             } else {

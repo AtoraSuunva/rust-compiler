@@ -36,25 +36,53 @@ impl Display for NodeValue {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VarType {
     Integer(Vec<usize>),
     Float(Vec<usize>),
-    Class,
+    Class(String),
     Function,
+    Void,
+}
+
+impl Display for VarType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VarType::Integer(idx) => write!(f, "Integer{}", indexes_to_string(idx)),
+            VarType::Float(idx) => write!(f, "Float{}", indexes_to_string(idx)),
+            VarType::Class(c) => write!(f, "Class({})", c),
+            VarType::Function => write!(f, "Function"),
+            VarType::Void => write!(f, "Void"),
+        }
+    }
+}
+
+fn indexes_to_string(indexes: &[usize]) -> String {
+    if indexes.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "[{}]",
+            indexes
+                .iter()
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct SymbolData {
     pub size: usize,
-    pub offset: usize,
+    pub offset: isize,
     pub label: Option<String>,
     pub table: Option<SymbolTable>,
     pub var_type: VarType,
 }
 
 impl SymbolData {
-    pub fn new(size: usize, offset: usize, var_type: VarType) -> Self {
+    pub fn new(size: usize, offset: isize, var_type: VarType) -> Self {
         Self {
             size,
             offset,
@@ -66,7 +94,7 @@ impl SymbolData {
 
     pub fn new_with_table(
         size: usize,
-        offset: usize,
+        offset: isize,
         var_type: VarType,
         table: SymbolTable,
     ) -> Self {
@@ -84,9 +112,10 @@ impl Display for SymbolData {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "size: {}, offset: {}{}",
+            "size: {}, offset: {}, type: {}{}",
             self.size,
             self.offset,
+            self.var_type,
             if self.table.is_some() {
                 ", -> Symbol Table"
             } else {
@@ -128,7 +157,7 @@ pub fn fmt_symbol_table(table: &SymbolTable) -> Result<String, std::fmt::Error> 
             output,
             "| {:<longest_key$} | {:<longest_value$} |",
             key,
-            value.borrow()
+            value.borrow().to_string(),
         )?;
 
         if let Some(other) = &value.borrow().table {
