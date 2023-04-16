@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::{location::Location, token_type::Type};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     pub token_type: Type,
     pub lexeme: String,
@@ -32,9 +32,9 @@ impl fmt::Display for Token {
         write!(
             f,
             "[{}, {}, {}]",
+            self.location,
             self.token_type,
             self.lexeme.replace('\n', "\\n").replace('\r', "\\r"),
-            self.location
         )
     }
 }

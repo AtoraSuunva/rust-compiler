@@ -10,6 +10,7 @@ use crate::{
         nodes::{CodeNode, NodeValue, SymbolData, VarType},
         tree_node::TreeNode,
     },
+    compiler_error::CompilerError,
     lexical::tokens::token_type::Type,
 };
 
@@ -47,7 +48,13 @@ impl Visitor for SymbolTableVisitor {
     ) -> VisitorResult {
         let class_name = match id {
             Type::Id(id) => id,
-            _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected identifier at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
         if let NodeValue::Tree(t) = &inherits.borrow().value {
@@ -63,20 +70,25 @@ impl Visitor for SymbolTableVisitor {
                                         .push(id.clone());
                                 }
                                 _ => {
-                                    return Err(format!(
-                                        "Expected identifier at '{}'!",
-                                        node.borrow().value
-                                    ))
+                                    return Err(CompilerError::new(
+                                        format!(
+                                            "Expected identifier at '{}'!",
+                                            node.borrow().value,
+                                        ),
+                                        node.borrow().token.clone(),
+                                    )
+                                    .into())
                                 }
                             };
                         }
                     }
                 }
                 _ => {
-                    return Err(format!(
-                        "Expected inherits node at '{}'!",
-                        node.borrow().value
-                    ))
+                    return Err(CompilerError::new(
+                        format!("Expected inherits node at '{}'!", node.borrow().value,),
+                        node.borrow().token.clone(),
+                    )
+                    .into())
                 }
             }
         }
@@ -100,7 +112,7 @@ impl Visitor for SymbolTableVisitor {
         let table = table_ref.get_or_insert_with(Default::default);
 
         for member in members {
-            let res: Result<(usize, String, VarType), String> = match member.borrow().value {
+            let res: Result<(usize, String, VarType), CompilerError> = match member.borrow().value {
                 NodeValue::Tree(TreeNode::Attribute()) => {
                     let mut children = member.children();
                     let _visibility: Type = children.next().unwrap().try_into()?;
@@ -109,7 +121,11 @@ impl Visitor for SymbolTableVisitor {
                     let id = if let Type::Id(n) = id {
                         n
                     } else {
-                        return Err(format!("Expected identifier at '{}'!", node_ref.value));
+                        return Err(CompilerError::new(
+                            format!("Expected identifier at '{}'!", node_ref.value),
+                            node_ref.token.clone(),
+                        )
+                        .into());
                     };
 
                     let type_: Type = children.next().unwrap().try_into()?;
@@ -118,11 +134,19 @@ impl Visitor for SymbolTableVisitor {
                         .next()
                         .unwrap()
                         .children()
-                        .map(|num| -> Result<usize, String> {
+                        .map(|num| -> Result<usize, CompilerError> {
                             if let NodeValue::Leaf(Type::IntNum(n)) = &num.borrow().value {
-                                usize::try_from(*n).map_err(|_| "Expected usize!".to_string())
+                                usize::try_from(*n).map_err(|_| {
+                                    CompilerError::new(
+                                        "Expected usize!".to_string(),
+                                        num.borrow().token.clone(),
+                                    )
+                                })
                             } else {
-                                Err("Expected number!".to_string())
+                                Err(CompilerError::new(
+                                    "Expected number!".to_string(),
+                                    num.borrow().token.clone(),
+                                ))
                             }
                         })
                         .collect::<Result<Vec<_>, _>>()?;
@@ -138,10 +162,11 @@ impl Visitor for SymbolTableVisitor {
                         match type_ {
                             Type::Id(class_name) => VarType::Class(class_name),
                             _ => {
-                                return Err(format!(
-                                    "Expected class identifier at '{}'!",
-                                    node_ref.value
-                                ))
+                                return Err(CompilerError::new(
+                                    format!("Expected class identifier at '{}'!", node_ref.value),
+                                    node_ref.token.clone(),
+                                )
+                                .into());
                             }
                         }
                     };
@@ -163,7 +188,7 @@ impl Visitor for SymbolTableVisitor {
 
                             Ok(format!("{}[{}]", type_, indices))
                         })
-                        .collect::<Result<Vec<_>, String>>()?;
+                        .collect::<Result<Vec<_>, CompilerError>>()?;
 
                     Ok((0, id.to_string(), VarType::Function))
                 }
@@ -174,7 +199,11 @@ impl Visitor for SymbolTableVisitor {
                     let id = if let Type::Id(n) = id {
                         n
                     } else {
-                        return Err(format!("Expected identifier at '{}'!", node_ref.value));
+                        return Err(CompilerError::new(
+                            format!("Expected identifier at '{}'!", node_ref.value),
+                            node_ref.token.clone(),
+                        )
+                        .into());
                     };
                     let _param_list: Vec<String> = children
                         .next()
@@ -187,16 +216,20 @@ impl Visitor for SymbolTableVisitor {
 
                             Ok(format!("{}[{}]", type_, indices))
                         })
-                        .collect::<Result<Vec<_>, String>>()?;
+                        .collect::<Result<Vec<_>, CompilerError>>()?;
                     let _return_type: Type = children.next().unwrap().try_into()?;
 
                     Ok((0, id, VarType::Function))
                 }
                 _ => {
-                    return Err(format!(
-                        "Expected Attribute, ConstructorFunc, or MemberFunc at '{}'!",
-                        member.borrow().value
-                    ))
+                    return Err(CompilerError::new(
+                        format!(
+                            "Expected Attribute, ConstructorFunc, or MemberFunc at '{}'!",
+                            member.borrow().value,
+                        ),
+                        member.borrow().token.clone(),
+                    )
+                    .into())
                 }
             };
 
@@ -229,7 +262,13 @@ impl Visitor for SymbolTableVisitor {
     ) -> VisitorResult {
         let var_name = match id {
             Type::Id(id) => id,
-            _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected identifier at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
         let size: usize;
@@ -240,11 +279,19 @@ impl Visitor for SymbolTableVisitor {
             NodeValue::Tree(TreeNode::IndiceList()) => {
                 let indices = indices
                     .children()
-                    .map(|num| -> Result<usize, String> {
+                    .map(|num| -> Result<usize, CompilerError> {
                         if let NodeValue::Leaf(Type::IntNum(n)) = &num.borrow().value {
-                            usize::try_from(*n).map_err(|_| "Expected usize!".to_string())
+                            usize::try_from(*n).map_err(|_| {
+                                CompilerError::new(
+                                    "Expected usize!".to_string(),
+                                    num.borrow().token.clone(),
+                                )
+                            })
                         } else {
-                            Err("Expected number!".to_string())
+                            Err(CompilerError::new(
+                                "Expected number!".to_string(),
+                                num.borrow().token.clone(),
+                            ))
                         }
                     })
                     .collect::<Result<Vec<_>, _>>()?;
@@ -260,17 +307,24 @@ impl Visitor for SymbolTableVisitor {
                 } else {
                     match type_ {
                         Type::Id(class_name) => VarType::Class(class_name),
-                        _ => return Err(format!("Expected class identifier at '{}'!", var_name)),
+                        _ => {
+                            return Err(CompilerError::new(
+                                format!("Expected class identifier at '{}'!", var_name),
+                                node.borrow().token.clone(),
+                            )
+                            .into())
+                        }
                     }
                 };
 
                 var_name
             }
             _ => {
-                return Err(format!(
-                    "Expected indice list at '{}'!",
-                    node.borrow().value
-                ))
+                return Err(CompilerError::new(
+                    format!("Expected indice list at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
             }
         };
 
@@ -328,9 +382,21 @@ impl Visitor for SymbolTableVisitor {
 
                     id_str.join("::")
                 }
-                _ => return Err(format!("Expected scope node at '{}'!", node.borrow().value)),
+                _ => {
+                    return Err(CompilerError::new(
+                        format!("Expected scope node at '{}'!", node.borrow().value),
+                        node.borrow().token.clone(),
+                    )
+                    .into())
+                }
             },
-            _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected identifier at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
         let mut fmt_params: Vec<Rc<RefCell<SymbolData>>> = vec![];
@@ -360,7 +426,13 @@ impl Visitor for SymbolTableVisitor {
                         Type::Float => VarType::Float(vec![]),
                         Type::Id(id) => VarType::Class(id),
                         Type::Void => VarType::Void,
-                        _ => return Err(format!("Expected type at '{}'!", node.borrow().value)),
+                        _ => {
+                            return Err(CompilerError::new(
+                                format!("Expected type at '{}'!", node.borrow().value),
+                                node.borrow().token.clone(),
+                            )
+                            .into())
+                        }
                     },
                 ))),
             );
@@ -391,7 +463,13 @@ impl Visitor for SymbolTableVisitor {
     ) -> VisitorResult {
         let var_name = match id {
             Type::Id(id) => id,
-            _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected identifier at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
         let size: usize;
@@ -402,11 +480,19 @@ impl Visitor for SymbolTableVisitor {
                 TreeNode::IndiceList() => {
                     let indices = indice_or_args
                         .children()
-                        .map(|num| -> Result<usize, String> {
+                        .map(|num| -> Result<usize, CompilerError> {
                             if let NodeValue::Leaf(Type::IntNum(n)) = &num.borrow().value {
-                                usize::try_from(*n).map_err(|_| "Expected usize!".to_string())
+                                usize::try_from(*n).map_err(|_| {
+                                    CompilerError::new(
+                                        "Expected usize!".to_string(),
+                                        num.borrow().token.clone(),
+                                    )
+                                })
                             } else {
-                                Err("Expected number!".to_string())
+                                Err(CompilerError::new(
+                                    "Expected number!".to_string(),
+                                    num.borrow().token.clone(),
+                                ))
                             }
                         })
                         .collect::<Result<Vec<_>, _>>()?;
@@ -422,7 +508,11 @@ impl Visitor for SymbolTableVisitor {
                         match type_ {
                             Type::Id(class_name) => VarType::Class(class_name),
                             _ => {
-                                return Err(format!("Expected class identifier at '{}'!", var_name))
+                                return Err(CompilerError::new(
+                                    format!("Expected class identifier at '{}'!", var_name),
+                                    node.borrow().token.clone(),
+                                )
+                                .into())
                             }
                         }
                     };
@@ -454,17 +544,31 @@ impl Visitor for SymbolTableVisitor {
                         var_type = VarType::Class(_id.clone());
                         var_name
                     } else {
-                        return Err(format!("Expected identifier at '{}'!", node.borrow().value));
+                        return Err(CompilerError::new(
+                            format!("Expected identifier at '{}'!", node.borrow().value),
+                            node.borrow().token.clone(),
+                        )
+                        .into());
                     }
                 }
                 _ => {
-                    return Err(format!(
-                        "Expected indice list or argument list node at '{}'!",
-                        node.borrow().value
-                    ))
+                    return Err(CompilerError::new(
+                        format!(
+                            "Expected indice list or argument list node at '{}'!",
+                            node.borrow().value
+                        ),
+                        node.borrow().token.clone(),
+                    )
+                    .into())
                 }
             },
-            _ => return Err(format!("Expected Tree at '{}'!", node.borrow().value)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected Tree at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
         let offset = -self.offset.fetch_add(size as isize, Ordering::SeqCst);

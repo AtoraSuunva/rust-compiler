@@ -3,18 +3,18 @@ use crate::{
         nodes::{CodeNode, NodeValue},
         tree_node::TreeNode,
     },
+    compiler_error::{CompilerError, CompilerResult},
     lexical::tokens::token_type::Type,
 };
 
-pub type CollectedVisitorResult = Result<(), Vec<String>>;
-pub type VisitorResult = Result<(), String>;
+pub type VisitorResult = CompilerResult<()>;
 
 pub const INT_SIZE: usize = 4;
 pub const FLOAT_SIZE: usize = 8;
 
 pub trait Visitor {
-    fn visit(&mut self, node: &CodeNode) -> CollectedVisitorResult {
-        let mut errors: Vec<String> = Vec::new();
+    fn visit(&mut self, node: &CodeNode) -> VisitorResult {
+        let mut errors: Vec<CompilerError> = Vec::new();
 
         for child in node.children() {
             if let Err(e) = self.visit(&child) {
@@ -25,9 +25,12 @@ pub trait Visitor {
         if let Err(e) = match &node.borrow().value {
             NodeValue::Leaf(l) => self.visit_leaf(node, l),
             NodeValue::Tree(t) => self.visit_tree(node, t),
-            NodeValue::Marker => panic!("Unexpected marker node!"),
+            NodeValue::Marker => Err(vec![CompilerError::new(
+                "Unexpected marker node!".to_string(),
+                node.borrow().token.clone(),
+            )]),
         } {
-            errors.push(e);
+            errors.extend(e);
         };
 
         if errors.is_empty() {

@@ -5,6 +5,7 @@ use crate::{
         nodes::{CodeNode, NodeValue, SymbolData, SymbolTable, VarType},
         tree_node::TreeNode,
     },
+    compiler_error::CompilerError,
     lexical::tokens::token_type::Type,
 };
 
@@ -45,7 +46,13 @@ impl Visitor for SymbolCollectorVisitor {
     ) -> VisitorResult {
         let class_name = match id {
             Type::Id(id) => id,
-            _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected identifier at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
         let node_ref = node.borrow();
@@ -53,10 +60,14 @@ impl Visitor for SymbolCollectorVisitor {
         let table = table_ref.get_or_insert_with(Default::default);
 
         if (self.global).contains_key(&class_name) {
-            return Err(format!(
-                "Class '{}' already defined! Defined again at {}",
-                class_name, node
-            ));
+            return Err(CompilerError::new(
+                format!(
+                    "Class '{}' already defined! Defined again at {}",
+                    class_name, node
+                ),
+                node.borrow().token.clone(),
+            )
+            .into());
         }
 
         let size = table.values().fold(0, |acc, x| acc + x.borrow().size);
@@ -83,28 +94,37 @@ impl Visitor for SymbolCollectorVisitor {
         let head_table = head_ref.symbol_table.borrow();
         let mut size: usize = 0;
 
-        let mut errors: Vec<String> = vec![];
+        let mut errors: Vec<CompilerError> = vec![];
 
         let (func_name, _) = head_table
             .as_ref()
             .unwrap()
             .iter()
             .find(|(_, value)| value.borrow().var_type == VarType::Function)
-            .ok_or("Function not found in head table")?;
+            .ok_or(CompilerError::new(
+                "Function not found in head table".to_string(),
+                node_ref.token.clone(),
+            ))?;
 
         let (return_name, return_type) = head_table
             .as_ref()
             .unwrap()
             .iter()
             .find(|(k, _)| k == &"_return")
-            .ok_or("Function return type not found in head table")?;
+            .ok_or(CompilerError::new(
+                "Function return type not found in head table".to_string(),
+                node_ref.token.clone(),
+            ))?;
 
         table.insert(return_name.clone(), return_type.clone());
 
         if (self.global).contains_key(func_name) {
-            errors.push(format!(
-                "Function '{}' already defined! Defined again at {}",
-                func_name, node
+            errors.push(CompilerError::new(
+                format!(
+                    "Function '{}' already defined! Defined again at {}",
+                    func_name, node
+                ),
+                node_ref.token.clone(),
             ));
         }
 
@@ -122,9 +142,12 @@ impl Visitor for SymbolCollectorVisitor {
                     let (key, value) = var_table.iter().next().unwrap();
 
                     if table.contains_key(key) {
-                        errors.push(format!(
-                            "Variable '{}' already defined in '{}'! Defined again at {}",
-                            key, func_name, child
+                        errors.push(CompilerError::new(
+                            format!(
+                                "Variable '{}' already defined in '{}'! Defined again at {}",
+                                key, func_name, child
+                            ),
+                            child.borrow().token.clone(),
                         ));
                     };
 
@@ -148,7 +171,7 @@ impl Visitor for SymbolCollectorVisitor {
         );
 
         if !errors.is_empty() {
-            return Err(errors.join("\n"));
+            return Err(errors);
         }
 
         Ok(())

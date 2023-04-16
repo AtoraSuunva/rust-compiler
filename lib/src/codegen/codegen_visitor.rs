@@ -9,6 +9,7 @@ use crate::{
         nodes::{CodeNode, NodeValue, SymbolData},
         tree_node::TreeNode,
     },
+    compiler_error::CompilerError,
     lexical::tokens::token_type::Type,
     semantic::visitor::{Visitor, VisitorResult, FLOAT_SIZE, INT_SIZE},
 };
@@ -100,11 +101,21 @@ impl Visitor for CodegenVisitor {
     ) -> VisitorResult {
         let id = match id {
             Type::Id(ref id) => id,
-            _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected identifier at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
-        let symbol_data = get_symbol_data(node, id)
-            .ok_or_else(|| format!("Found no symbol table entry for '{}'!", id))?;
+        let symbol_data = get_symbol_data(node, id).ok_or_else(|| {
+            CompilerError::new(
+                format!("Found no symbol table entry for '{}'!", id),
+                node.borrow().token.clone(),
+            )
+        })?;
 
         let offset = symbol_data.borrow().offset;
         let label = format!("{offset}(r14)");
@@ -131,19 +142,30 @@ impl Visitor for CodegenVisitor {
         _indices: Option<CodeNode>,
     ) -> VisitorResult {
         let id_ref = id.borrow();
-        let id = match id_ref.value {
+        let id_str = match id_ref.value {
             NodeValue::Leaf(Type::Id(ref id)) => id,
-            _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected identifier at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
-        let symbol_data = get_symbol_data(node, id)
-            .ok_or_else(|| format!("Found no symbol table entry for '{}'!", id))?;
+        let symbol_data = get_symbol_data(node, id_str).ok_or_else(|| {
+            CompilerError::new(
+                format!("Found no symbol table entry for '{}'!", id_str),
+                id.borrow().token.clone(),
+            )
+        })?;
 
-        let label = symbol_data
-            .borrow()
-            .label
-            .clone()
-            .ok_or_else(|| format!("Found no label for '{}', was it never initialized?", id))?;
+        let label = symbol_data.borrow().label.clone().ok_or_else(|| {
+            CompilerError::new(
+                format!("Found no label for '{}', was it never initialized?", id_str),
+                id.borrow().token.clone(),
+            )
+        })?;
 
         node.borrow().label.borrow_mut().replace(label);
         Ok(())
@@ -183,21 +205,21 @@ impl Visitor for CodegenVisitor {
         op: Type,
         right: CodeNode,
     ) -> VisitorResult {
-        let left_label = left
-            .borrow()
-            .label
-            .borrow()
-            .clone()
-            .ok_or_else(|| format!("Expected a label at {}", left))?;
+        let left_label = left.borrow().label.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected a label at {}", left),
+                left.borrow().token.clone(),
+            )
+        })?;
 
         let left_code = left.borrow().code.borrow().clone();
 
-        let right_label = right
-            .borrow()
-            .label
-            .borrow()
-            .clone()
-            .ok_or_else(|| format!("Expected a label at {}", right))?;
+        let right_label = right.borrow().label.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected a label at {}", right),
+                right.borrow().token.clone(),
+            )
+        })?;
 
         let right_code = right.borrow().code.borrow().clone();
 
@@ -208,7 +230,13 @@ impl Visitor for CodegenVisitor {
             Type::LEq => "cle",
             Type::Gt => "cgt",
             Type::GEq => "cge",
-            _ => return Err(format!("Expected operator at {}!", op)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected operator at {}!", op),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
         let reg = self.registers.pop().unwrap();
@@ -259,21 +287,21 @@ impl Visitor for CodegenVisitor {
         op: CodeNode,
         right: CodeNode,
     ) -> VisitorResult {
-        let left_label = left
-            .borrow()
-            .label
-            .borrow()
-            .clone()
-            .ok_or_else(|| format!("Expected a label at {}", left))?;
+        let left_label = left.borrow().label.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected a label at {}", left),
+                left.borrow().token.clone(),
+            )
+        })?;
 
         let left_code = left.borrow().code.borrow().clone();
 
-        let right_label = right
-            .borrow()
-            .label
-            .borrow()
-            .clone()
-            .ok_or_else(|| format!("Expected a label at {}", right))?;
+        let right_label = right.borrow().label.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected a label at {}", right),
+                right.borrow().token.clone(),
+            )
+        })?;
 
         let right_code = right.borrow().code.borrow().clone();
 
@@ -283,9 +311,21 @@ impl Visitor for CodegenVisitor {
                 Type::Minus => "sub",
                 Type::Mult => "mul",
                 Type::Div => "div",
-                _ => return Err(format!("Expected operator at {}!", op)),
+                _ => {
+                    return Err(CompilerError::new(
+                        format!("Expected operator at {}!", op),
+                        node.borrow().token.clone(),
+                    )
+                    .into())
+                }
             },
-            _ => return Err(format!("Expected operator at {}!", op)),
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected operator at {}!", op),
+                    op.borrow().token.clone(),
+                )
+                .into())
+            }
         };
 
         let reg = self.registers.pop().unwrap();
@@ -348,12 +388,12 @@ impl Visitor for CodegenVisitor {
         expr: CodeNode,
     ) -> VisitorResult {
         // Variables store their labels
-        let variable_label = variable
-            .borrow()
-            .label
-            .borrow()
-            .clone()
-            .ok_or_else(|| format!("Expected label at {}!", node))?;
+        let variable_label = variable.borrow().label.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected label at {}!", node),
+                node.borrow().token.clone(),
+            )
+        })?;
 
         // Expressions store their labels
         let expr_label = expr.borrow().label.borrow().clone().unwrap();
@@ -383,12 +423,12 @@ impl Visitor for CodegenVisitor {
         condition: CodeNode,
         while_block: CodeNode,
     ) -> VisitorResult {
-        let condition_label = condition
-            .borrow()
-            .label
-            .borrow()
-            .clone()
-            .ok_or_else(|| format!("Expected label at {}!", condition))?;
+        let condition_label = condition.borrow().label.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected label at {}!", condition),
+                condition.borrow().token.clone(),
+            )
+        })?;
 
         let condition_code = condition.borrow().code.borrow().clone();
 
@@ -428,12 +468,12 @@ impl Visitor for CodegenVisitor {
         if_block: CodeNode,
         else_block: CodeNode,
     ) -> VisitorResult {
-        let condition_label = condition
-            .borrow()
-            .label
-            .borrow()
-            .clone()
-            .ok_or_else(|| format!("Expected label at {}!", condition))?;
+        let condition_label = condition.borrow().label.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected label at {}!", condition),
+                condition.borrow().token.clone(),
+            )
+        })?;
 
         let condition_code = condition.borrow().code.borrow().clone();
 
@@ -483,8 +523,12 @@ impl Visitor for CodegenVisitor {
         // store r13 in variable
         // continue
 
-        let cur_func = get_current_function(node)
-            .ok_or_else(|| format!("Expected parent function at {}!", node))?;
+        let cur_func = get_current_function(node).ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected parent function at {}!", node),
+                node.borrow().token.clone(),
+            )
+        })?;
 
         let func_size = cur_func
             .borrow()
@@ -541,8 +585,12 @@ impl Visitor for CodegenVisitor {
         // decr stack pointer r14
         // continue
 
-        let cur_func = get_current_function(node)
-            .ok_or_else(|| format!("Expected parent function at {}!", node))?;
+        let cur_func = get_current_function(node).ok_or_else(|| {
+            CompilerError::new(
+                format!("Expected parent function at {}!", node),
+                node.borrow().token.clone(),
+            )
+        })?;
 
         let func_size = cur_func
             .borrow()

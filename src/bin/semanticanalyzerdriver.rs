@@ -2,6 +2,7 @@ use std::{env, fs, path::Path, process};
 
 use rust_compiler_lib::{
     ast::nodes::{fmt_symbol_table, string_tree},
+    compiler_error::{errors_to_string, print_errors, CompilerError},
     lexical::lexer::LexerScanner,
     semantic::{
         symbol_collector::SymbolCollectorVisitor, symbol_visitor::SymbolTableVisitor,
@@ -62,19 +63,26 @@ where
 
     let ast_path = path.with_extension("outast");
     let valid_path = path.with_extension("outderivation");
-    let invalid_path = path.with_extension("outsyntaxerrors");
+    let syntax_err_path = path.with_extension("outsyntaxerrors");
     let semantic_tables = path.with_extension("outsymboltables");
     let semantic_err_path = path.with_extension("outsemanticerrors");
 
     match predictive_parser::parse(&mut lexer) {
-        Ok((derivations, errors, ast_stack)) => {
+        Ok((derivations, parse_errs, ast_stack)) => {
             println!("Parsing successful!");
-            println!("Errors: {}", errors.len());
+            println!("Errors: {}", parse_errs.len());
             println!("Derivations: {}", derivations.len());
             println!("Last Derivation:\n{}", derivations.last().unwrap());
 
             println!("\n\nFinal AST:");
             println!("ast_stack: {:?}", ast_stack);
+
+            fs::write(valid_path, derivations.join("\n")).expect("Failed to write to file");
+
+            if !parse_errs.is_empty() {
+                fs::write(syntax_err_path, errors_to_string(&parse_errs))
+                    .expect("Failed to write to file");
+            }
 
             if let Some(root) = ast_stack.first() {
                 fs::write(ast_path, string_tree(root)).expect("Failed to write to file");
@@ -82,10 +90,9 @@ where
                 println!("\nVisiting...\n");
                 let mut visitor = SymbolTableVisitor::new();
                 let res = visitor.visit(root);
-                let mut visit_errors: Vec<String> = Vec::new();
+                let mut visit_errors: Vec<CompilerError> = parse_errs;
 
                 if let Err(e) = res {
-                    visit_errors.push("First Pass Errors:".to_string());
                     visit_errors.extend(e);
                 }
 
@@ -93,7 +100,6 @@ where
                 let res = collector.visit(root);
 
                 if let Err(e) = res {
-                    visit_errors.push("Collector Pass Errors:".to_string());
                     visit_errors.extend(e);
                 }
 
@@ -105,22 +111,21 @@ where
                 fs::write(semantic_tables, tables).expect("Failed to write to file");
 
                 if !visit_errors.is_empty() {
-                    println!("{}", visit_errors.join("\n"));
-                    fs::write(semantic_err_path, visit_errors.join("\n"))
+                    fs::write(semantic_err_path, errors_to_string(&visit_errors))
                         .expect("Failed to write to file");
+                }
+
+                if !visit_errors.is_empty() {
+                    eprintln!("Compilation finished with errors:");
+                    print_errors(&visit_errors);
                 }
             } else {
                 println!("No AST generated!");
             }
-
-            fs::write(valid_path, derivations.join("\n")).expect("Failed to write to file");
-
-            if !errors.is_empty() {
-                fs::write(invalid_path, errors.join("\n")).expect("Failed to write to file");
-            }
         }
-        Err(err) => {
-            eprintln!("Parsing failed: {}", err);
+        Err(errs) => {
+            eprintln!("Parsing failed:");
+            print_errors(&errs);
         }
     };
 

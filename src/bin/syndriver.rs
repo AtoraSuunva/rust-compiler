@@ -1,7 +1,8 @@
 use std::{env, fs, path::Path, process};
 
 use rust_compiler_lib::{
-    ast::nodes::string_tree, lexical::lexer::LexerScanner, syntactic::predictive_parser,
+    ast::nodes::string_tree, compiler_error::errors_to_string, lexical::lexer::LexerScanner,
+    syntactic::predictive_parser,
 };
 
 fn main() {
@@ -74,10 +75,10 @@ where
             }
 
             fs::write(valid_path, derivations.join("\n")).expect("Failed to write to file");
-            fs::write(invalid_path, errors.join("\n")).expect("Failed to write to file");
+            fs::write(invalid_path, errors_to_string(&errors)).expect("Failed to write to file");
         }
         Err(err) => {
-            eprintln!("Parsing failed: {}", err);
+            eprintln!("Parsing failed:\n{}", errors_to_string(&err));
         }
     };
 }

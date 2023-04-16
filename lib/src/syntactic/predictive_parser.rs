@@ -2,6 +2,7 @@ use std::{collections::HashMap, env};
 
 use crate::{
     ast::nodes::CodeNode,
+    compiler_error::{CompilerError, CompilerResult},
     lexical::{
         lexer::LexerScanner,
         tokens::{token::Token, token_type::Type},
@@ -11,14 +12,18 @@ use crate::{
 
 use super::parsing_table::{self, Production};
 
-type ParserResult = (Vec<String>, Vec<String>, Vec<CodeNode>);
+type ParserResult = (Vec<String>, Vec<CompilerError>, Vec<CodeNode>);
 
-pub fn parse(scanner: &mut LexerScanner) -> Result<ParserResult, String> {
+pub fn parse(scanner: &mut LexerScanner) -> CompilerResult<ParserResult> {
     let debug = env::var("DEBUG").map_or(false, |_| true);
     let mut stack: Vec<&Production> = vec![&Production::NonTerm("START")];
     let mut token = match scanner.next_token() {
         Some(t) => t,
-        None => return Err("Empty input!".to_owned()),
+        None => {
+            return Err(vec![CompilerError::new_with_message(
+                "Empty input!".to_string(),
+            )])
+        }
     };
 
     let parsing_table = parsing_table::get_parsing_table();
@@ -26,7 +31,7 @@ pub fn parse(scanner: &mut LexerScanner) -> Result<ParserResult, String> {
     let follow_sets = first_follow_sets::get_follow_set_table();
 
     let mut derivation: Vec<String> = vec![];
-    let mut errors: Vec<String> = vec![];
+    let mut errors: Vec<CompilerError> = vec![];
     let mut parsed: Vec<String> = vec![];
 
     let mut ast_stack: Vec<CodeNode> = Vec::new();
@@ -54,7 +59,16 @@ pub fn parse(scanner: &mut LexerScanner) -> Result<ParserResult, String> {
 
         let top = match stack.last() {
             Some(x) => x,
-            None => return Err("Parsing stack emptied too early!".to_owned()),
+            None => {
+                return Err(vec![
+                    errors,
+                    vec![CompilerError::new(
+                        "Parsing stack emptied too early!".to_owned(),
+                        token,
+                    )],
+                ]
+                .concat())
+            }
         };
 
         if debug {
@@ -151,7 +165,14 @@ pub fn parse(scanner: &mut LexerScanner) -> Result<ParserResult, String> {
     }
 
     if !stack.is_empty() {
-        Err("Parsing stack not empty at the end!".to_owned())
+        Err(vec![
+            errors,
+            vec![CompilerError::new(
+                "Parsing stack not empty at the end!".to_owned(),
+                token,
+            )],
+        ]
+        .concat())
     } else {
         Ok((derivation, errors, ast_stack))
     }
@@ -166,12 +187,15 @@ fn skip_error(
     stack: &mut Vec<&Production>,
     first_set: &SetTable,
     follow_set: &SetTable,
-) -> Result<String, String> {
-    let error_message = format!(
-        "Syntax error: Unexpected token '{}' at {}, expected {}",
-        lookahead.lexeme,
-        lookahead.location,
-        stack.last().unwrap()
+) -> CompilerResult<CompilerError> {
+    let error_message = CompilerError::new(
+        format!(
+            "Syntax error: Unexpected token '{}' at {}, expected {}",
+            lookahead.lexeme,
+            lookahead.location,
+            stack.last().unwrap()
+        ),
+        lookahead.clone(),
     );
 
     eprintln!("{}", error_message);
@@ -211,7 +235,10 @@ fn skip_error(
         let lookahead = match scanner.next_token() {
             Some(t) => t,
             None => {
-                return Err("Unexpected end of input! We cannot recover...".to_owned());
+                return Err(vec![CompilerError::new(
+                    "Unexpected end of input! We cannot recover...".to_string(),
+                    lookahead.clone(),
+                )]);
             }
         };
 

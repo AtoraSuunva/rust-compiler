@@ -9,7 +9,10 @@ use std::{
 
 use rctree::Node;
 
-use crate::lexical::tokens::{token::Token, token_type::Type};
+use crate::{
+    compiler_error::CompilerError,
+    lexical::tokens::{token::Token, token_type::Type},
+};
 
 use super::tree_node::TreeNode;
 
@@ -256,57 +259,59 @@ pub fn string_tree(node: &CodeNode) -> String {
 }
 
 impl TryFrom<NodeValue> for Type {
-    type Error = String;
+    type Error = CompilerError;
 
     fn try_from(value: NodeValue) -> Result<Self, Self::Error> {
         match value {
             NodeValue::Leaf(t) => Ok(t),
-            _ => Err(format!("Expected {} to be a leaf", value)),
+            _ => Err(CompilerError::new_with_message(format!(
+                "Expected {} to be a leaf",
+                value
+            ))),
         }
     }
 }
 
 impl TryFrom<NodeValue> for TreeNode {
-    type Error = String;
+    type Error = CompilerError;
 
     fn try_from(value: NodeValue) -> Result<Self, Self::Error> {
         match value {
             NodeValue::Tree(t) => Ok(t),
-            _ => Err(format!("Expected {} to be a tree", value)),
+            _ => Err(CompilerError::new_with_message(format!(
+                "Expected {} to be a tree",
+                value
+            ))),
         }
     }
 }
 
 impl TryFrom<StructNode> for Type {
-    type Error = String;
+    type Error = CompilerError;
 
     fn try_from(node: StructNode) -> Result<Self, Self::Error> {
         node.value
             .clone()
             .try_into()
-            .map_err(|e| -> String { format!("{}: {}", e, node) })
+            .map_err(|e: CompilerError| CompilerError::new(e.message, node.token))
     }
 }
 
 impl TryFrom<StructNode> for TreeNode {
-    type Error = String;
+    type Error = CompilerError;
 
     fn try_from(node: StructNode) -> Result<Self, Self::Error> {
         node.value
             .clone()
             .try_into()
-            .map_err(|e| -> String { format!("{}: {}", e, node) })
+            .map_err(|e: CompilerError| CompilerError::new(e.message, node.token))
     }
 }
 
 impl TryFrom<CodeNode> for Type {
-    type Error = String;
+    type Error = CompilerError;
 
     fn try_from(node: CodeNode) -> Result<Self, Self::Error> {
-        node.borrow()
-            .value
-            .clone()
-            .try_into()
-            .map_err(|e| -> String { format!("{}: {}", e, node) })
+        node.borrow().value.clone().try_into()
     }
 }
