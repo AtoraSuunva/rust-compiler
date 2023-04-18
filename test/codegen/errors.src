@@ -2,9 +2,13 @@ function main() => void {
   localvar x: integer;
   localvar y: float;
   localvar c: CLASS();
+  localvar arr: integer[1][2];
   x = x + y;
   x = y;
   z = 1;
+
+  x = arr[1];
+  x = arr[1][2.1];
 
   not_exist();
 }

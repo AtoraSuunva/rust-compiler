@@ -126,16 +126,6 @@ impl Visitor for CodegenVisitor {
 
         let offset = symbol_data.borrow().offset;
         let label = format!("{offset}(r14)");
-        let size = symbol_data.borrow().size;
-
-        if size == 0 {
-            // Probably a class
-            // let class = match type_ {
-            //     Type::Id(ref id) => id,
-            //     _ => return Err(format!("Expected identifier at '{}'!", node.borrow().value)),
-            // };
-            // TODO: class
-        }
 
         symbol_data.borrow_mut().label = Some(label.clone());
         node.borrow().label.borrow_mut().replace(label);
@@ -166,12 +156,8 @@ impl Visitor for CodegenVisitor {
             )
         })?;
 
-        let label = symbol_data.borrow().label.clone().ok_or_else(|| {
-            CompilerError::new(
-                format!("Found no label for '{}', was it never initialized?", id_str),
-                node.borrow().token.clone(),
-            )
-        })?;
+        let offset = symbol_data.borrow().offset;
+        let label = format!("{offset}(r14)");
 
         node.borrow().label.borrow_mut().replace(label);
         Ok(())
@@ -406,25 +392,38 @@ impl Visitor for CodegenVisitor {
         })?;
 
         // Expressions store their labels
-        let expr_label = expr.borrow().label.borrow().clone().unwrap();
-        let expr_code = expr.borrow().code.borrow().clone();
+        let expr_label = expr.borrow().label.borrow().clone();
 
-        let mut code = String::new();
+        if let Some(expr_label) = expr_label {
+            let expr_code = expr.borrow().code.borrow().clone();
 
-        code.push_str("% assignment\n");
-        if let Some(expr_code) = expr_code {
-            code.push_str(&expr_code);
+            let mut code = String::new();
+
+            code.push_str("% assignment\n");
+            if let Some(expr_code) = expr_code {
+                code.push_str(&expr_code);
+            }
+
+            let expr_reg = if is_reg(&expr_label) {
+                expr_label
+            } else {
+                let reg = self.get_register();
+                code.push_str(&format!("lw {reg}, {expr_label}\n"));
+                reg
+            };
+
+            code.push_str(&format!("sw {variable_label}, {expr_reg}\n\n"));
+            self.free_register(expr_reg);
+            node.borrow().code.borrow_mut().replace(code);
+
+            Ok(())
+        } else {
+            Err(CompilerError::new(
+                format!("Expected label at {}!", node),
+                node.borrow().token.clone(),
+            )
+            .into())
         }
-        code.push_str(&format!("sw {variable_label}, {expr_label}\n\n"));
-
-        node.borrow().code.borrow_mut().replace(code);
-
-        if is_reg(&expr_label) {
-            // release the register back into the wild
-            self.free_register(expr_label);
-        }
-
-        Ok(())
     }
 
     fn visit_while(

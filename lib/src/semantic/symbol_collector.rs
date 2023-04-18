@@ -214,6 +214,16 @@ impl Visitor for SymbolCollectorVisitor {
                         class_data.borrow().table.clone().unwrap(),
                     ))),
                 );
+
+                for (key2, value2) in table.clone() {
+                    if value2.borrow().offset > value_ref.offset || &key2 == key {
+                        continue;
+                    }
+
+                    let mut value2_ref = value2.borrow().clone();
+                    value2_ref.offset -= class_size as isize;
+                    table.insert(key2.clone(), Rc::new(RefCell::new(value2_ref)));
+                }
             }
         }
 

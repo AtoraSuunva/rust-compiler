@@ -1,11 +1,11 @@
 align
 strbuf res 32
+regbuf res 16
 
 entry
 % set up stack
 addi r14, r0, topaddr
-% "i mentioned this last week-ish in this chat, but i found that the topaddr of 16000 is actually the location that data in r0 is stored
-% so at the beginning of the program you just have to decrease r14 by 4" -- mamamia on discord thank you so much
+% required to avoid overwriting r0
 subi r14, r14, 4
 jl r15, main
 hlt
@@ -34,11 +34,17 @@ clt r2, r3, r1
 % end rel expression
 bz r2, t5
 % while block
-% write expr
+% Write()
+% Save registers
+addi r12, r0, regbuf
+sw 0(r12), r1
+sw -4(r12), r2
+sw -8(r12), r3
+sw -12(r12), r4
 % store expr int
 lw r1, -4(r14)
 % write call
-addi r14, r14, -12
+addi r14, r14, -16
 sw -8(r14), r1
 addi r1, r0, strbuf
 sw -12(r14), r1
@@ -50,8 +56,15 @@ addi r13, r0, 13
 putc r13
 addi r13, r0, 10
 putc r13
+% Restore registers
+addi r12, r0, regbuf
+lw r1, 0(r12)
+lw r2, -4(r12)
+lw r3, -8(r12)
+lw r4, -12(r12)
 % write end, return stack pointer
-addi r14, r14, 12
+addi r14, r14, 16
+
 
 % while
 t2 nop
@@ -63,11 +76,17 @@ clt r3, r4, r1
 % end rel expression
 bz r3, t3
 % while block
-% write expr
+% Write()
+% Save registers
+addi r12, r0, regbuf
+sw 0(r12), r1
+sw -4(r12), r2
+sw -8(r12), r3
+sw -12(r12), r4
 % store expr int
 lw r1, -8(r14)
 % write call
-addi r14, r14, -12
+addi r14, r14, -16
 sw -8(r14), r1
 addi r1, r0, strbuf
 sw -12(r14), r1
@@ -79,8 +98,15 @@ addi r13, r0, 13
 putc r13
 addi r13, r0, 10
 putc r13
+% Restore registers
+addi r12, r0, regbuf
+lw r1, 0(r12)
+lw r2, -4(r12)
+lw r3, -8(r12)
+lw r4, -12(r12)
 % write end, return stack pointer
-addi r14, r14, 12
+addi r14, r14, 16
+
 
 % assignment
 % arith expression
@@ -101,13 +127,19 @@ ceq r1, r5, r4
 % end rel expression
 bz r1, t0
 % if block
-% write expr
+% Write()
+% Save registers
+addi r12, r0, regbuf
+sw 0(r12), r1
+sw -4(r12), r2
+sw -8(r12), r3
+sw -12(r12), r4
 % assign literal 99
 addi r4, r0, 99
 % store expr int
 add r5, r0, r4
 % write call
-addi r14, r14, -12
+addi r14, r14, -16
 sw -8(r14), r5
 addi r5, r0, strbuf
 sw -12(r14), r5
@@ -119,8 +151,15 @@ addi r13, r0, 13
 putc r13
 addi r13, r0, 10
 putc r13
+% Restore registers
+addi r12, r0, regbuf
+lw r1, 0(r12)
+lw r2, -4(r12)
+lw r3, -8(r12)
+lw r4, -12(r12)
 % write end, return stack pointer
-addi r14, r14, 12
+addi r14, r14, 16
+
 j t1
 % else block
 t0 nop

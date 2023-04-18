@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     ast::{
-        nodes::{CodeNode, NodeValue, SymbolData, SymbolTable, VarType},
+        nodes::{CodeNode, NodeValue, SymbolData, SymbolTable, VarType, Visibility},
         tree_node::TreeNode,
     },
     compiler_error::CompilerError,
@@ -443,34 +443,36 @@ impl Visitor for SymbolTableVisitor {
         // and  arr[1][2] -> VarType::Integer([9])
         // "popping off" dimensions from the start
         if let Some(idx) = indices {
-            let new_type = match *idx.borrow().var_type.borrow() {
-                Some(VarType::IndiceList(dimensions)) => match var_type {
-                    VarType::Integer(indexes) => {
-                        check_dimensions(dimensions, &indexes)?;
-                        VarType::Integer(indexes[dimensions..].to_vec())
-                    }
-                    VarType::Float(indexes) => {
-                        check_dimensions(dimensions, &indexes)?;
-                        VarType::Float(indexes[dimensions..].to_vec())
-                    }
+            if idx.children().count() > 0 {
+                let new_type = match *idx.borrow().var_type.borrow() {
+                    Some(VarType::IndiceList(dimensions)) => match var_type {
+                        VarType::Integer(indexes) => {
+                            check_dimensions(dimensions, &indexes)?;
+                            VarType::Integer(indexes[dimensions..].to_vec())
+                        }
+                        VarType::Float(indexes) => {
+                            check_dimensions(dimensions, &indexes)?;
+                            VarType::Float(indexes[dimensions..].to_vec())
+                        }
+                        _ => {
+                            return Err(CompilerError::new(
+                                format!("Indexed a non-integer or non-float array at '{id}'!"),
+                                idx.borrow().token.clone(),
+                            )
+                            .into());
+                        }
+                    },
                     _ => {
                         return Err(CompilerError::new(
-                            format!("Indexed a non-integer or non-float array at '{id}'!"),
+                            format!("Expected indice list for array '{id}'!"),
                             idx.borrow().token.clone(),
                         )
                         .into());
                     }
-                },
-                _ => {
-                    return Err(CompilerError::new(
-                        format!("Expected indice list for array '{id}'!"),
-                        idx.borrow().token.clone(),
-                    )
-                    .into());
-                }
-            };
+                };
 
-            node_ref.var_type.borrow_mut().replace(new_type);
+                node_ref.var_type.borrow_mut().replace(new_type);
+            }
         }
 
         Ok(())
@@ -663,34 +665,102 @@ impl Visitor for SymbolTableVisitor {
                 node.borrow().token.clone(),
             )
         })?;
-        let expr_type = expr.borrow().var_type.borrow().clone().unwrap();
+        let expr_type = expr.borrow().var_type.borrow().clone();
 
-        if var_type != expr_type {
+        if let Some(expr_type) = expr_type {
+            if var_type != expr_type {
+                return Err(CompilerError::new(
+                    format!(
+                        "Cannot assign expression of type '{:?}' to variable of type '{:?}'!",
+                        expr_type, var_type
+                    ),
+                    node.borrow().token.clone(),
+                )
+                .into());
+            };
+        } else {
             return Err(CompilerError::new(
-                format!(
-                    "Cannot assign expression of type '{:?}' to variable of type '{:?}'!",
-                    expr_type, var_type
-                ),
+                "Expression has no type!".to_string(),
                 node.borrow().token.clone(),
             )
             .into());
-        };
+        }
 
         Ok(())
     }
 
     fn visit_expr(&mut self, node: &CodeNode, expr: Vec<CodeNode>) -> VisitorResult {
-        let node_ref = node.borrow();
-        let first = expr.first().unwrap().borrow();
+        if expr.is_empty() {
+            return Err(CompilerError::new(
+                "Empty expression?".to_string(),
+                node.borrow().token.clone(),
+            )
+            .into());
+        } else if expr.len() == 1 {
+            let node_ref = node.borrow();
+            let first = expr.first().unwrap().borrow();
 
-        let label = first.label.borrow().clone();
-        *node_ref.label.borrow_mut() = label;
+            let label = first.label.borrow().clone();
+            *node_ref.label.borrow_mut() = label;
 
-        let code = first.code.borrow().clone();
-        *node_ref.code.borrow_mut() = code;
+            let code = first.code.borrow().clone();
+            *node_ref.code.borrow_mut() = code;
 
-        let var_type = first.var_type.borrow().clone();
-        *node_ref.var_type.borrow_mut() = var_type;
+            let var_type = first.var_type.borrow().clone();
+            *node_ref.var_type.borrow_mut() = var_type;
+        } else {
+            // Dot-indexed expression
+            let node_ref = node.borrow();
+            let first = expr.first().unwrap().borrow();
+            let var_borrow = first.var_type.borrow();
+
+            let label = first.label.borrow().clone();
+            *node_ref.label.borrow_mut() = label;
+
+            let code = first.code.borrow().clone();
+            *node_ref.code.borrow_mut() = code;
+
+            let var_type = first.var_type.borrow().clone();
+            *node_ref.var_type.borrow_mut() = var_type;
+
+            if let Some(VarType::Class(class_name)) = var_borrow.clone() {
+                let global_table = get_global_table(node)?;
+                if let Some(class) = global_table.get(&class_name) {
+                    let class_table = class.borrow().table.clone().unwrap();
+                    let indexed_by = expr.get(1).unwrap();
+
+                    if let NodeValue::Leaf(Type::Id(id)) = indexed_by.borrow().value.clone() {
+                        if let Some(data) = class_table.get(&id) {
+                            // TODO: code for offset loading
+                            let data_ref = data.borrow();
+                            if data_ref.visibility != Some(Visibility::Public) {
+                                return Err(CompilerError::new(
+                                    format!(
+                                        "Cannot access private member '{id}' of class '{class_name}'!",
+                                        id = id,
+                                        class_name = class_name
+                                    ),
+                                    node_ref.token.clone(),
+                                )
+                                .into());
+                            }
+                        } else {
+                            return Err(CompilerError::new(
+                                format!("Class '{class_name}' has no member '{id}'!",),
+                                node_ref.token.clone(),
+                            )
+                            .into());
+                        }
+                    };
+                };
+            } else {
+                return Err(CompilerError::new(
+                    "Dot operator used on non-class type!".to_string(),
+                    node_ref.token.clone(),
+                )
+                .into());
+            }
+        }
 
         Ok(())
     }

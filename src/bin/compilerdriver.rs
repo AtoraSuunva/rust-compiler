@@ -4,7 +4,7 @@ use rust_compiler_lib::{
     ast::nodes::{fmt_symbol_table, string_tree},
     codegen::codegen_visitor::CodegenVisitor,
     compiler_error::{errors_to_string, print_errors, CompilerError},
-    lexical::lexer::LexerScanner,
+    lexical::{lexer::LexerScanner, tokens::token_type::Type},
     semantic::{
         symbol_collector::SymbolCollectorVisitor, symbol_globals::SymbolGlobalResolverVisitor,
         symbol_visitor::SymbolTableVisitor, visitor::Visitor,
@@ -60,6 +60,57 @@ where
         }
     };
 
+    {
+        let lexer = LexerScanner::new(&content);
+
+        let mut last_line = 1;
+        let mut tokens: Vec<String> = vec![];
+        let mut errors: Vec<String> = vec![];
+
+        for token in lexer {
+            if token.location.line != last_line {
+                tokens.push("\n".to_owned());
+                last_line = token.location.line;
+            }
+
+            if let Type::Invalid(err) = &token.token_type {
+                errors.push(format!(
+                    "Lexical error: {}: \"{}\": line {}\n",
+                    err.as_detailed(),
+                    token.lexeme.replace('\n', "\\n").replace('\r', "\\r"),
+                    token.location.line
+                ));
+            }
+
+            tokens.push(token.to_string());
+            tokens.push(" ".to_owned());
+        }
+
+        let valid_tokens = tokens.join("");
+        let invalid_tokens = errors.join("");
+
+        let valid_path = path.with_extension("outlextokens");
+        let invalid_path = path.with_extension("outlexerrors");
+
+        match fs::write(valid_path, valid_tokens.trim_end()) {
+            Ok(_) => (),
+            Err(err) => {
+                eprintln!("Error while writing valid tokens to file: {}", err);
+                process::exit(1);
+            }
+        }
+
+        if !invalid_tokens.is_empty() {
+            match fs::write(invalid_path, invalid_tokens.trim_end()) {
+                Ok(_) => (),
+                Err(err) => {
+                    eprintln!("Error while writing invalid tokens to file: {}", err);
+                    process::exit(1);
+                }
+            }
+        }
+    }
+
     let mut lexer = LexerScanner::new(&content);
 
     let ast_path = path.with_extension("outast");
@@ -89,7 +140,7 @@ where
                 fs::write(ast_path, string_tree(root)).expect("Failed to write to file");
 
                 println!("\nVisiting...\n");
-                let mut visit_errors: Vec<CompilerError> = parse_errs;
+                let mut visit_errors: Vec<CompilerError> = vec![];
 
                 let mut resolver = SymbolGlobalResolverVisitor::new();
                 let res = resolver.visit(root);
@@ -138,6 +189,7 @@ where
 
                 fs::write(moon_out, outcode).expect("Failed to write to file");
 
+                visit_errors.extend(parse_errs);
                 if !visit_errors.is_empty() {
                     eprintln!("Compilation finished with errors:");
                     print_errors(&visit_errors);

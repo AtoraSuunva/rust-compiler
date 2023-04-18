@@ -4,8 +4,14 @@ class BAG {
   public function get_value: () => integer;
 };
 
+function BAG::get_value() => integer {}
+
 function main() => void {
-  localvar bag: BAG(123);
-  localvar sack: integer[10];
-  localvar big_sack: integer[2][10];
+  localvar x: integer;
+
+  x = 45deeeee;
 }
+
+function main() => void {}
+
+function add(x: integer, y: integer) => integer {}

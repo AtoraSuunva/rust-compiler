@@ -30,7 +30,7 @@ impl CompilerError {
 impl Display for CompilerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let first = if let Some(t) = &self.token {
-            format!("{}: ", t)
+            format!("{}: ", t.location)
         } else {
             format!("{}: ", self.location)
         };

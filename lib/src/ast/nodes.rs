@@ -108,6 +108,12 @@ fn indexes_to_string(indexes: &[usize]) -> String {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Visibility {
+    Public,
+    Private,
+}
+
 #[derive(Debug, Clone)]
 pub struct SymbolData {
     pub size: usize,
@@ -115,6 +121,7 @@ pub struct SymbolData {
     pub label: Option<String>,
     pub table: Option<SymbolTable>,
     pub var_type: VarType,
+    pub visibility: Option<Visibility>,
 }
 
 impl SymbolData {
@@ -125,6 +132,7 @@ impl SymbolData {
             label: None,
             table: None,
             var_type,
+            visibility: None,
         }
     }
 
@@ -140,6 +148,7 @@ impl SymbolData {
             label: None,
             table: Some(table),
             var_type,
+            visibility: None,
         }
     }
 }

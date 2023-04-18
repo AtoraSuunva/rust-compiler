@@ -231,7 +231,7 @@ fn skip_error(
     }
 
     // Scan tokens until we get one with which we can resume the parse.
-    while !first.contains(&top_type) || !follow.contains(&top_type) {
+    while !first.contains(&top_type) && !follow.contains(&top_type) {
         let lookahead = match scanner.next_token() {
             Some(t) => t,
             None => {
@@ -243,6 +243,20 @@ fn skip_error(
         };
 
         top_type = lookahead.token_type.empty_variant();
+
+        if first.contains(&top_type) {
+            eprintln!("Resuming from token '{}'", lookahead.lexeme);
+            break;
+        }
+
+        if follow.contains(&top_type) {
+            eprintln!(
+                "Resuming from token (& popping stack) '{}'",
+                lookahead.lexeme
+            );
+            stack.pop();
+            break;
+        }
 
         eprintln!("Skipping token '{}'", lookahead.lexeme);
     }
