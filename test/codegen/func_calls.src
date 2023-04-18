@@ -1,17 +1,19 @@
 function main() => void {
   localvar x: integer;
 
-  x = 1 + 2;
-  x = add(1, 2);
+  x = dbg(add(1, 2));
   x = add(x, 1);
 
+  write(11111);
   write(x); // 4
 }
 
+// Add both params together
 function add(x: integer, y: integer) => integer {
-  return (dbg(x) + y);
+  return (dbg(x) + dbg(y));
 }
 
+// Log the param and then just return it
 function dbg(x: integer) => integer {
   write(x);
   return (x);

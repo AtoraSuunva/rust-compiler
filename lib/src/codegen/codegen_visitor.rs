@@ -17,26 +17,43 @@ pub struct CodegenVisitor {
     registers: Vec<String>,
 }
 
+const SAVE_REGISTERS: &str = "% Save registers
+addi r12, r0, regbuf
+sw 0(r12), r1
+sw -4(r12), r2
+sw -8(r12), r3
+sw -12(r12), r4
+";
+
+const RESTORE_REGISTERS: &str = "% Restore registers
+addi r12, r0, regbuf
+lw r1, 0(r12)
+lw r2, -4(r12)
+lw r3, -8(r12)
+lw r4, -12(r12)
+";
+
 impl CodegenVisitor {
     pub fn new() -> Self {
         Self {
-            alloc: String::from("strbuf res 32\n"),
+            alloc: String::from("strbuf res 32\nregbuf res 16\n"),
             code: String::from(""),
             label_count: AtomicUsize::new(0),
-            registers: (1..13).map(|r| format!("r{r}",)).rev().collect(),
+            registers: (1..12).map(|r| format!("r{r}",)).rev().collect(),
         }
     }
 
     #[track_caller]
     fn get_register(&mut self) -> String {
-        let reg = self.registers.pop().unwrap();
+        self.registers.pop().unwrap()
+        // let reg = self.registers.pop().unwrap();
         // eprintln!(
         //     " Taking register: {:<3} ({:>2} left) {}",
         //     reg,
         //     self.registers.len(),
         //     Location::caller(),
         // );
-        reg
+        // reg
     }
 
     fn free_register(&mut self, reg: String) {
@@ -55,6 +72,8 @@ impl CodegenVisitor {
         format!("t{}", self.label_count.fetch_add(1, Ordering::SeqCst))
     }
 
+    // % \"i mentioned this last week-ish in this chat, but i found that the topaddr of 16000 is actually the location that data in r0 is stored
+    // % so at the beginning of the program you just have to decrease r14 by 4\" -- mamamia on discord thank you so much
     pub fn get_code(&self) -> String {
         format!(
             "align
@@ -62,8 +81,7 @@ impl CodegenVisitor {
 entry
 % set up stack
 addi r14, r0, topaddr
-% \"i mentioned this last week-ish in this chat, but i found that the topaddr of 16000 is actually the location that data in r0 is stored
-% so at the beginning of the program you just have to decrease r14 by 4\" -- mamamia on discord thank you so much
+% required to avoid overwriting r0
 subi r14, r14, 4
 jl r15, main
 hlt
@@ -545,7 +563,8 @@ impl Visitor for CodegenVisitor {
         let var_code = variable.borrow().code.borrow().clone().unwrap_or_default();
 
         let mut code = String::new();
-        code.push_str("% read expr\n");
+        code.push_str("% Read()\n");
+        code.push_str(SAVE_REGISTERS);
         // run any var init code
         code.push_str(&var_code);
         // inc stack pointer
@@ -563,6 +582,7 @@ impl Visitor for CodegenVisitor {
         code.push_str(&format!("addi r14, r14, {func_size}\n"));
         // store r13 in variable
         code.push_str(&format!("sw {var_label}, r13\n"));
+        code.push_str(RESTORE_REGISTERS);
 
         node.borrow().code.borrow_mut().replace(code);
         Ok(())
@@ -595,7 +615,8 @@ impl Visitor for CodegenVisitor {
             .clone()
             .unwrap()
             .values()
-            .fold(0, |acc, x| acc + x.borrow().size);
+            .fold(0, |acc, x| acc + x.borrow().size)
+            + 4;
 
         let expr_label = expr
             .borrow()
@@ -608,7 +629,8 @@ impl Visitor for CodegenVisitor {
 
         let mut code = String::new();
 
-        code.push_str("% write expr\n");
+        code.push_str("% Write()\n");
+        code.push_str(SAVE_REGISTERS);
         code.push_str(&expr_code);
         let expr_reg = self.get_register();
 
@@ -645,8 +667,9 @@ impl Visitor for CodegenVisitor {
         code.push_str("putc r13\n");
 
         // decr stack pointer
+        code.push_str(RESTORE_REGISTERS);
         code.push_str("% write end, return stack pointer\n");
-        code.push_str(&format!("addi r14, r14, {func_size}\n"));
+        code.push_str(&format!("addi r14, r14, {func_size}\n\n"));
 
         node.borrow().code.borrow_mut().replace(code);
 
@@ -669,10 +692,7 @@ impl Visitor for CodegenVisitor {
             code.push_str(&format!("add r13, r0, {label}\n"));
             self.free_register(label);
         } else {
-            let reg = self.get_register();
-            code.push_str(&format!("lw {reg}, {label}\n"));
-            code.push_str(&format!("sw 0(r13), {reg}\n"));
-            self.free_register(reg);
+            code.push_str(&format!("lw r13, {label}\n"));
         }
 
         node_ref.code.borrow_mut().replace(code);
@@ -779,7 +799,24 @@ impl Visitor for CodegenVisitor {
         })?;
         let func_label = func_data.borrow().label.clone().unwrap();
         let func_table = func_data.borrow().table.clone().unwrap();
-        let func_size = func_data.borrow().size;
+
+        let us_func = get_current_function(node).ok_or_else(|| {
+            CompilerError::new(
+                "Function call not inside a function!".to_string(),
+                node_ref.token.clone(),
+            )
+        })?;
+        let us_ref = us_func.borrow();
+        let us_size = us_ref
+            .symbol_table
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .values()
+            .fold(0, |acc, v| {
+                let v_ref = v.borrow();
+                acc + v_ref.size
+            });
 
         // We know the function exists, and that the types match
         // so now we need to:
@@ -841,18 +878,24 @@ impl Visitor for CodegenVisitor {
             offset -= param_size as isize;
         }
 
-        code.push_str(&format!("addi r14, r14, -{func_size}\n"));
+        code.push_str(&format!("addi r14, r14, -{us_size}\n"));
         code.push_str(&push_code);
 
         code.push_str("% Call function\n");
         code.push_str(&format!("jl r15, {func_label}\n"));
 
         code.push_str("% Return stack pointer\n");
-        code.push_str(&format!("addi r14, r14, {func_size}\n"));
+        code.push_str(&format!("addi r14, r14, {us_size}\n"));
+
+        // return is always stored in 13
+        let ret_reg = self.get_register();
+        code.push_str("% Store return value\n");
+        code.push_str(&format!("add {ret_reg}, r0, r13\n"));
+
+        code.push_str(&format!("% End function call {func_signature}\n\n"));
 
         node_ref.code.borrow_mut().replace(code);
-        // return is always stored in 13
-        node_ref.label.borrow_mut().replace("r13".to_string());
+        node_ref.label.borrow_mut().replace(ret_reg);
         Ok(())
     }
 }

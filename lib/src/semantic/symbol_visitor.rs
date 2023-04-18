@@ -14,7 +14,10 @@ use crate::{
     lexical::tokens::token_type::Type,
 };
 
-use super::visitor::{Visitor, VisitorResult, FLOAT_SIZE, INT_SIZE};
+use super::{
+    visitor::{Visitor, VisitorResult, FLOAT_SIZE, INT_SIZE},
+    visitor_utils::get_global_table,
+};
 
 type InheritsMap = HashMap<String, Vec<String>>;
 
@@ -830,6 +833,67 @@ impl Visitor for SymbolTableVisitor {
             )
             .into());
         }
+
+        Ok(())
+    }
+
+    fn visit_function_call(
+        &mut self,
+        node: &CodeNode,
+        id: Type,
+        param_list: CodeNode,
+    ) -> VisitorResult {
+        let node_ref = node.borrow();
+        let func_name = match id {
+            Type::Id(id) => id,
+            _ => {
+                return Err(CompilerError::new(
+                    format!("Expected identifier at '{}'!", node.borrow().value),
+                    node.borrow().token.clone(),
+                )
+                .into())
+            }
+        };
+
+        let param_types = param_list
+            .children()
+            .map(|c| {
+                let c_ref = c.borrow();
+                let c_type = c_ref.var_type.borrow().clone();
+                c_type.map_or_else(|| String::from("?"), |v| v.to_string())
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        let func_signature = format!("{}({})", func_name, param_types);
+        let global_table = get_global_table(node)?;
+
+        let func_data = global_table.get(&func_signature).ok_or_else(|| {
+            node_ref
+                .code
+                .borrow_mut()
+                .replace("addi r13, r0 , 0".to_string());
+            node_ref.label.borrow_mut().replace("r13".to_string());
+            CompilerError::new(
+                format!("Function '{}' not found!", func_signature),
+                node_ref.token.clone(),
+            )
+        })?;
+
+        let func_table = func_data.borrow();
+        let (_, return_type) = func_table
+            .table
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|(k, _)| k == &"_return")
+            .ok_or(CompilerError::new(
+                "Function return type not found in head table".to_string(),
+                node_ref.token.clone(),
+            ))?;
+
+        let return_type = return_type.borrow().clone().var_type;
+        node_ref.var_type.borrow_mut().replace(return_type);
 
         Ok(())
     }
