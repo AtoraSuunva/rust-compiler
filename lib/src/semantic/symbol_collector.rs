@@ -34,6 +34,14 @@ impl Visitor for SymbolCollectorVisitor {
         let mut table_ref = node_ref.symbol_table.borrow_mut();
         let table = table_ref.get_or_insert_with(Default::default);
         table.extend(self.global.clone());
+
+        self.global.get("main()").ok_or_else(|| {
+            CompilerError::new(
+                "No main function found! (Did you make a typo or add parameters?)".to_string(),
+                node_ref.token.clone(),
+            )
+        })?;
+
         Ok(())
     }
 
@@ -117,6 +125,10 @@ impl Visitor for SymbolCollectorVisitor {
             ))?;
 
         table.insert(return_name.clone(), return_type.clone());
+        table.insert(
+            "_ret_addr".to_string(),
+            Rc::new(RefCell::new(SymbolData::new(4, 0, VarType::Void))),
+        );
 
         if (self.global).contains_key(func_name) {
             errors.push(CompilerError::new(
@@ -159,16 +171,23 @@ impl Visitor for SymbolCollectorVisitor {
             }
         }
 
-        // Then add the func to the global table:
-        self.global.insert(
-            func_name.to_string(),
+        table.insert(
+            "..".to_string(),
             Rc::new(RefCell::new(SymbolData::new_with_table(
-                size,
                 0,
-                VarType::Function,
-                table.clone(),
+                0,
+                VarType::Global,
+                self.global.clone(),
             ))),
         );
+
+        let mut symbol_data = SymbolData::new_with_table(size, 0, VarType::Function, table.clone());
+        let func_label = head_ref.label.borrow();
+        symbol_data.label = func_label.clone();
+
+        // Then add the func to the global table:
+        self.global
+            .insert(func_name.to_string(), Rc::new(RefCell::new(symbol_data)));
 
         if !errors.is_empty() {
             return Err(errors);

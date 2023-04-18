@@ -13,7 +13,7 @@ function main() => void {
       if (y == 20) then {
         write(99);
       } else;
-    }
+    } // missing ;
     x = x + 1;
-  }
+  } // missing ;
 }

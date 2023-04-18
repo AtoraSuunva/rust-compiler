@@ -46,6 +46,15 @@ pub enum VarType {
     Class(String),
     Function,
     Void,
+    Global,
+    IndiceList(usize),
+    ArgumentList(Vec<VarType>),
+}
+
+impl VarType {
+    pub fn eq_variant(&self, other: &VarType) -> bool {
+        discriminant(self) == discriminant(other)
+    }
 }
 
 impl Display for VarType {
@@ -56,6 +65,18 @@ impl Display for VarType {
             VarType::Class(c) => write!(f, "Class({})", c),
             VarType::Function => write!(f, "Function"),
             VarType::Void => write!(f, "Void"),
+            VarType::Global => write!(f, "Global"),
+            VarType::IndiceList(i) => write!(f, "IndiceList({})", i),
+            VarType::ArgumentList(args) => {
+                write!(
+                    f,
+                    "ArgumentList({})",
+                    args.iter()
+                        .map(|v| v.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
         }
     }
 }
@@ -155,7 +176,16 @@ pub fn fmt_symbol_table(table: &SymbolTable) -> Result<String, std::fmt::Error> 
 
     let mut other_tables: Vec<(String, SymbolTable)> = Vec::new();
 
-    for (key, value) in table {
+    let mut to_print = table.iter().collect::<Vec<_>>();
+
+    to_print.sort_by(
+        |(k1, v1), (k2, v2)| match v2.borrow().offset.cmp(&v1.borrow().offset) {
+            std::cmp::Ordering::Equal => k1.cmp(k2),
+            ord => ord,
+        },
+    );
+
+    for (key, value) in to_print {
         writeln!(
             output,
             "| {:<longest_key$} | {:<longest_value$} |",
@@ -163,8 +193,10 @@ pub fn fmt_symbol_table(table: &SymbolTable) -> Result<String, std::fmt::Error> 
             value.borrow().to_string(),
         )?;
 
-        if let Some(other) = &value.borrow().table {
-            other_tables.push((key.clone(), other.clone()));
+        if key != ".." {
+            if let Some(other) = &value.borrow().table {
+                other_tables.push((key.clone(), other.clone()));
+            }
         }
     }
 
@@ -185,6 +217,7 @@ pub struct StructNode {
 
     pub label: Rc<RefCell<Option<String>>>,
     pub code: Rc<RefCell<Option<String>>>,
+    pub var_type: Rc<RefCell<Option<VarType>>>,
 }
 
 static ID_COUNT: AtomicUsize = AtomicUsize::new(1);
@@ -204,6 +237,7 @@ impl StructNode {
             symbol_table: RefCell::new(None),
             label: Rc::new(RefCell::new(None)),
             code: Rc::new(RefCell::new(None)),
+            var_type: Rc::new(RefCell::new(None)),
         }
     }
 

@@ -6,8 +6,8 @@ use rust_compiler_lib::{
     compiler_error::{errors_to_string, print_errors, CompilerError},
     lexical::lexer::LexerScanner,
     semantic::{
-        symbol_collector::SymbolCollectorVisitor, symbol_visitor::SymbolTableVisitor,
-        visitor::Visitor,
+        symbol_collector::SymbolCollectorVisitor, symbol_globals::SymbolGlobalResolverVisitor,
+        symbol_visitor::SymbolTableVisitor, visitor::Visitor,
     },
     syntactic::predictive_parser,
 };
@@ -89,9 +89,17 @@ where
                 fs::write(ast_path, string_tree(root)).expect("Failed to write to file");
 
                 println!("\nVisiting...\n");
+                let mut visit_errors: Vec<CompilerError> = parse_errs;
+
+                let mut resolver = SymbolGlobalResolverVisitor::new();
+                let res = resolver.visit(root);
+
+                if let Err(e) = res {
+                    visit_errors.extend(e);
+                }
+
                 let mut visitor = SymbolTableVisitor::new();
                 let res = visitor.visit(root);
-                let mut visit_errors: Vec<CompilerError> = parse_errs;
 
                 if let Err(e) = res {
                     visit_errors.extend(e);

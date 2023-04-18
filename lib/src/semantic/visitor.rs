@@ -85,9 +85,11 @@ pub trait Visitor {
                 self.visit_function(node, children.next().unwrap(), children.next().unwrap())
             }
             TreeNode::FunctionBody() => self.visit_function_body(node, children.collect()),
-            TreeNode::FunctionCall() => {
-                self.visit_function_call(node, children.next().unwrap(), children.next().unwrap())
-            }
+            TreeNode::FunctionCall() => self.visit_function_call(
+                node,
+                children.next().unwrap().try_into()?,
+                children.next().unwrap(),
+            ),
             TreeNode::FunctionHead() => self.visit_function_head(
                 node,
                 children.next().unwrap(),
@@ -147,7 +149,7 @@ pub trait Visitor {
                 children.next().unwrap().try_into()?,
             ),
             TreeNode::Variable() => {
-                self.visit_variable(node, children.next().unwrap(), children.next())
+                self.visit_variable(node, children.next().unwrap().try_into()?, children.next())
             }
             TreeNode::While() => {
                 self.visit_while(node, children.next().unwrap(), children.next().unwrap())
@@ -249,7 +251,7 @@ pub trait Visitor {
     fn visit_function_call(
         &mut self,
         _node: &CodeNode,
-        _id: CodeNode,
+        _id: Type,
         _param_list: CodeNode,
     ) -> VisitorResult {
         Ok(())
@@ -368,7 +370,7 @@ pub trait Visitor {
     fn visit_variable(
         &mut self,
         _node: &CodeNode,
-        _id: CodeNode,
+        _id: Type,
         _indices: Option<CodeNode>,
     ) -> VisitorResult {
         Ok(())

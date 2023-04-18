@@ -1,0 +1,18 @@
+function main() => void {
+  localvar x: integer;
+
+  x = 1 + 2;
+  x = add(1, 2);
+  x = add(x, 1);
+
+  write(x); // 4
+}
+
+function add(x: integer, y: integer) => integer {
+  return (dbg(x) + y);
+}
+
+function dbg(x: integer) => integer {
+  write(x);
+  return (x);
+}

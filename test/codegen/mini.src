@@ -1,12 +1,20 @@
-class QUADRATIC {
+class TAGGED {
+  public attribute tag: integer;
+};
+
+class ID {
+  public attribute id: integer;
+};
+
+class QUADRATIC isa TAGGED, ID {
   private attribute a: float;
   private attribute b: float;
   private attribute c: float;
-  public  constructor: (A: float, B: float, C: float);
-  public  function evaluate: (x: float) => float;
+  public constructor: (A: float, B: float, C: float);
+  public function evaluate: (x: float) => float;
 };
 
-function main(n: integer, m: float) => void {
+function main() => void {
   localvar x: integer;
   localvar y: float;
   localvar z: integer[4][2][1];
@@ -15,6 +23,7 @@ function main(n: integer, m: float) => void {
   y = 2.1;
 
   x = 3 + 1 * 2;
+  add(1, 2 + 3);
 
   while (x < 10) {
     write(x);
@@ -23,5 +32,5 @@ function main(n: integer, m: float) => void {
 }
 
 function add(a: integer, b: integer) => integer {
-//  a = a + b;
+  return (a + b);
 }

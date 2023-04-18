@@ -17,3 +17,4 @@ Cargo.lock
 /test/**/*.outast
 /test/**/*.outsymboltables
 /test/**/*.outsemanticerrors
+/test/**/*.moon
