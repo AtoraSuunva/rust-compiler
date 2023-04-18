@@ -6,6 +6,20 @@ class ID {
   public attribute id: integer;
 };
 
+class ID {
+  public attribute second: integer;
+};
+
+class DUPLICATE {
+  public attribute duplicate: integer;
+  public attribute duplicate: integer;
+  public function not_defined: () => void;
+};
+
+function DUPLICATE::not_declared() => void {
+
+}
+
 class ADDER isa TAGGED, ID {
   private attribute a: integer;
   private attribute b: integer;
@@ -27,6 +41,7 @@ function main() => void {
   localvar y: float;
   localvar z: integer[4][2][1];
   localvar q: ADDER(1, 2, 3);
+  localvar x: integer;
   x = 1;
   // y = 2.1;
 
@@ -42,3 +57,10 @@ function main() => void {
 function add(a: integer, b: integer) => integer {
   return (a + b);
 }
+
+function add(a: integer, b: integer) => integer {
+  return (a + b);
+}
+
+function overloaded() => integer {}
+function overloaded(a: integer) => integer {}

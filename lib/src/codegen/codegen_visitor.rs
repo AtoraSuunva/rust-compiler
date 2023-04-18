@@ -688,6 +688,40 @@ impl Visitor for CodegenVisitor {
             )
         })?;
 
+        let expr_type = expr_ref.var_type.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                "Failed to get type of expression".to_string(),
+                expr_ref.token.clone(),
+            )
+        })?;
+
+        let func_table = get_current_function(node)
+            .unwrap()
+            .borrow()
+            .symbol_table
+            .clone();
+
+        let func_table = func_table.borrow().clone().unwrap();
+
+        let (_, return_type) =
+            func_table
+                .iter()
+                .find(|(k, _)| k == &"_return")
+                .ok_or(CompilerError::new(
+                    "Function return type not found in head table".to_string(),
+                    node_ref.token.clone(),
+                ))?;
+
+        let return_type = return_type.borrow().clone().var_type;
+
+        if expr_type != return_type {
+            return Err(CompilerError::new(
+                format!("Return type mismatch (expected {return_type}, got {expr_type})!",),
+                node_ref.token.clone(),
+            )
+            .into());
+        }
+
         if is_reg(&label) {
             code.push_str(&format!("add r13, r0, {label}\n"));
             self.free_register(label);
@@ -793,7 +827,10 @@ impl Visitor for CodegenVisitor {
                 .replace("addi r13, r0 , 0".to_string());
             node_ref.label.borrow_mut().replace("r13".to_string());
             CompilerError::new(
-                format!("Function '{}' not found!", func_signature),
+                format!(
+                    "Failed to generate function call, '{}' not found!",
+                    func_signature
+                ),
                 node_ref.token.clone(),
             )
         })?;

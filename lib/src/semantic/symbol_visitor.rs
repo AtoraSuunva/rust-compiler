@@ -354,7 +354,7 @@ impl Visitor for SymbolTableVisitor {
             String::from("main")
         } else {
             let func_label = self.new_func_label();
-            format!("{func_label}_{func_name}")
+            format!("{func_label}_{}", func_name.replace(':', "_"))
         };
 
         node_ref.label.borrow_mut().replace(func_label);
@@ -610,6 +610,18 @@ impl Visitor for SymbolTableVisitor {
             }
         };
 
+        if let VarType::Class(class_name) = &var_type {
+            let global_table = get_global_table(node)?;
+
+            if !global_table.contains_key(class_name) {
+                return Err(CompilerError::new(
+                    format!("Class '{class_name}' not found!"),
+                    node.borrow().token.clone(),
+                )
+                .into());
+            }
+        }
+
         let offset = -self.offset.fetch_add(size as isize, Ordering::SeqCst);
 
         let node_ref = node.borrow();
@@ -639,6 +651,34 @@ impl Visitor for SymbolTableVisitor {
         Ok(())
     }
 
+    fn visit_assignment(
+        &mut self,
+        node: &CodeNode,
+        variable: CodeNode,
+        expr: CodeNode,
+    ) -> VisitorResult {
+        let var_type = variable.borrow().var_type.borrow().clone().ok_or_else(|| {
+            CompilerError::new(
+                "Variable has no type!".to_string(),
+                node.borrow().token.clone(),
+            )
+        })?;
+        let expr_type = expr.borrow().var_type.borrow().clone().unwrap();
+
+        if var_type != expr_type {
+            return Err(CompilerError::new(
+                format!(
+                    "Cannot assign expression of type '{:?}' to variable of type '{:?}'!",
+                    expr_type, var_type
+                ),
+                node.borrow().token.clone(),
+            )
+            .into());
+        };
+
+        Ok(())
+    }
+
     fn visit_expr(&mut self, node: &CodeNode, expr: Vec<CodeNode>) -> VisitorResult {
         let node_ref = node.borrow();
         let first = expr.first().unwrap().borrow();
@@ -659,7 +699,7 @@ impl Visitor for SymbolTableVisitor {
         &mut self,
         node: &CodeNode,
         left: CodeNode,
-        op: CodeNode,
+        _op: CodeNode,
         right: CodeNode,
     ) -> VisitorResult {
         let node_ref = node.borrow();
@@ -712,9 +752,7 @@ impl Visitor for SymbolTableVisitor {
 
         if !left_type.eq_variant(&right_type) {
             return Err(CompilerError::new(
-                format!(
-                    "Cannot do arithmetic on mixed types (Tried {left_type} {op} {right_type})!",
-                ),
+                format!("Cannot do arithmetic on mixed types (Tried {left_type} & {right_type})!",),
                 node_ref.token.clone(),
             )
             .into());

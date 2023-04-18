@@ -1,0 +1,16 @@
+function main() => void {
+  localvar x: integer;
+  localvar y: float;
+  localvar c: CLASS();
+  x = x + y;
+  x = y;
+  z = 1;
+
+  not_exist();
+}
+
+function main() => void {}
+
+function void_return() => void {
+  return (1);
+}

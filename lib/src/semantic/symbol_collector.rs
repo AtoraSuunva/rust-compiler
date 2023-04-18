@@ -150,6 +150,21 @@ impl Visitor for SymbolCollectorVisitor {
             ));
         }
 
+        let func_split = func_name.split_once('(').map(|v| v.0);
+        for (key, value) in self.global.clone() {
+            let val_type = value.borrow().var_type.clone();
+
+            if val_type == VarType::Function
+                && key.split_once('(').map(|v| v.0) == func_split
+                && &key != func_name
+            {
+                errors.push(CompilerError::new(
+                    format!("[WARN] Function '{func_name}' is overloading function '{key}'",),
+                    node_ref.token.clone(),
+                ));
+            }
+        }
+
         let param_list = head.children().nth(1).unwrap();
         let param_list_ref = param_list.borrow();
 
@@ -178,6 +193,27 @@ impl Visitor for SymbolCollectorVisitor {
                     // Add localvar decl info
                     table.insert(key.clone(), value.clone());
                 }
+            }
+        }
+
+        // Resolve class sizes
+        for (key, value) in table.clone().iter() {
+            let value_ref = value.borrow();
+            let var_type = value_ref.var_type.clone();
+
+            if let VarType::Class(class_name) = var_type.clone() {
+                let class_data = self.global.get(&class_name).unwrap();
+                let class_size = class_data.borrow().size;
+
+                table.insert(
+                    key.clone(),
+                    Rc::new(RefCell::new(SymbolData::new_with_table(
+                        class_size,
+                        value_ref.offset,
+                        var_type,
+                        class_data.borrow().table.clone().unwrap(),
+                    ))),
+                );
             }
         }
 

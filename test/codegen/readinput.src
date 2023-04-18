@@ -18,6 +18,9 @@ function main() => void {
   if (y < x) then {
     write(22222);
     write(y);
+    if (y < 5) then {
+      write(9999);
+    } else;
   } else {
     write(23333);
     write(x);

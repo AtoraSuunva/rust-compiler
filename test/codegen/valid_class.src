@@ -1,0 +1,11 @@
+class BAG {
+  private attribute value: integer;
+  public constructor: (value: integer);
+  public function get_value: () => integer;
+};
+
+function main() => void {
+  localvar bag: BAG(123);
+  localvar sack: integer[10];
+  localvar big_sack: integer[2][10];
+}

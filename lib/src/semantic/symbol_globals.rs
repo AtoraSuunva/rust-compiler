@@ -2,6 +2,7 @@ use std::{
     cell::RefCell,
     rc::Rc,
     sync::atomic::{AtomicIsize, Ordering},
+    vec,
 };
 
 use crate::{
@@ -115,10 +116,6 @@ impl Visitor for SymbolGlobalResolverVisitor {
         let mut table_ref = node_ref.symbol_table.borrow_mut();
         let table = table_ref.get_or_insert_with(Default::default);
 
-        if let Some(members_table) = members.borrow().symbol_table.borrow().clone() {
-            table.extend(members_table);
-        }
-
         table.insert(
             "_inherits".to_string(),
             Rc::new(RefCell::new(SymbolData::new(
@@ -127,6 +124,10 @@ impl Visitor for SymbolGlobalResolverVisitor {
                 VarType::Inherits(inherits_list),
             ))),
         );
+
+        if let Some(members_table) = members.borrow().symbol_table.borrow().clone() {
+            table.extend(members_table);
+        }
 
         self.global.insert(
             class_name.clone(),
@@ -145,6 +146,8 @@ impl Visitor for SymbolGlobalResolverVisitor {
         let node_ref = node.borrow();
         let mut table_ref = node_ref.symbol_table.borrow_mut();
         let table = table_ref.get_or_insert_with(Default::default);
+        let mut errors: Vec<CompilerError> = vec![];
+        let mut added_members: Vec<String> = vec![];
 
         for member in members {
             let res: Result<(usize, String, VarType), CompilerError> = match member.borrow().value {
@@ -269,13 +272,25 @@ impl Visitor for SymbolGlobalResolverVisitor {
             };
 
             let (size, key, var_type) = res?;
-            table.insert(
-                key,
-                Rc::new(RefCell::new(SymbolData::new(size, 0, var_type))),
-            );
+            if added_members.contains(&key) {
+                errors.push(CompilerError::new(
+                    format!("Duplicate member '{}'!", key),
+                    member.borrow().token.clone(),
+                ));
+            } else {
+                added_members.push(key.clone());
+                table.insert(
+                    key,
+                    Rc::new(RefCell::new(SymbolData::new(size, 0, var_type))),
+                );
+            }
         }
 
-        Ok(())
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 
     fn visit_parameter(
