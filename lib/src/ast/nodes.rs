@@ -49,6 +49,7 @@ pub enum VarType {
     Global,
     IndiceList(usize),
     ArgumentList(Vec<VarType>),
+    Inherits(Vec<String>),
 }
 
 impl VarType {
@@ -72,6 +73,17 @@ impl Display for VarType {
                     f,
                     "ArgumentList({})",
                     args.iter()
+                        .map(|v| v.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            VarType::Inherits(inherits) => {
+                write!(
+                    f,
+                    "Inherits({})",
+                    inherits
+                        .iter()
                         .map(|v| v.to_string())
                         .collect::<Vec<_>>()
                         .join(", ")
@@ -193,7 +205,7 @@ pub fn fmt_symbol_table(table: &SymbolTable) -> Result<String, std::fmt::Error> 
             value.borrow().to_string(),
         )?;
 
-        if key != ".." {
+        if key != ".." && !key.starts_with("_in") {
             if let Some(other) = &value.borrow().table {
                 other_tables.push((key.clone(), other.clone()));
             }

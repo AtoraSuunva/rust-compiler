@@ -1,6 +1,5 @@
 use std::{
     cell::RefCell,
-    collections::HashMap,
     rc::Rc,
     sync::atomic::{AtomicIsize, AtomicUsize, Ordering},
 };
@@ -19,10 +18,7 @@ use super::{
     visitor_utils::get_global_table,
 };
 
-type InheritsMap = HashMap<String, Vec<String>>;
-
 pub struct SymbolTableVisitor {
-    inherits: InheritsMap,
     offset: AtomicIsize,
     label_count: AtomicUsize,
     current_table: Rc<RefCell<SymbolTable>>,
@@ -33,7 +29,6 @@ const BASE_OFFSET: isize = 4;
 impl SymbolTableVisitor {
     pub fn new() -> Self {
         Self {
-            inherits: InheritsMap::new(),
             offset: AtomicIsize::new(BASE_OFFSET),
             label_count: AtomicUsize::new(0),
             current_table: Rc::new(RefCell::new(SymbolTable::new())),
@@ -56,9 +51,12 @@ impl Visitor for SymbolTableVisitor {
         &mut self,
         node: &CodeNode,
         id: Type,
-        inherits: CodeNode,
-        members: CodeNode,
+        _inherits: CodeNode,
+        _members: CodeNode,
     ) -> VisitorResult {
+        // Reset the offset counter
+        self.offset.store(BASE_OFFSET, Ordering::SeqCst);
+
         let class_name = match id {
             Type::Id(id) => id,
             _ => {
@@ -70,187 +68,75 @@ impl Visitor for SymbolTableVisitor {
             }
         };
 
-        if let NodeValue::Tree(t) = &inherits.borrow().value {
-            match t {
-                TreeNode::InheritsList() => {
-                    for child in inherits.children() {
-                        if let NodeValue::Leaf(l) = &child.borrow().value {
-                            match l {
-                                Type::Id(id) => {
-                                    self.inherits
-                                        .entry(class_name.clone())
-                                        .or_insert(Vec::new())
-                                        .push(id.clone());
-                                }
-                                _ => {
-                                    return Err(CompilerError::new(
-                                        format!(
-                                            "Expected identifier at '{}'!",
-                                            node.borrow().value,
-                                        ),
-                                        node.borrow().token.clone(),
-                                    )
-                                    .into())
-                                }
-                            };
-                        }
-                    }
-                }
-                _ => {
-                    return Err(CompilerError::new(
-                        format!("Expected inherits node at '{}'!", node.borrow().value,),
-                        node.borrow().token.clone(),
-                    )
-                    .into())
-                }
-            }
-        }
-
         let node_ref = node.borrow();
         let mut table_ref = node_ref.symbol_table.borrow_mut();
         let table = table_ref.get_or_insert_with(Default::default);
 
-        if let Some(members_table) = members.borrow().symbol_table.borrow().clone() {
-            table.extend(members_table);
+        let inherit_list = table.get("_inherits").unwrap().clone();
+        let inherit_list = inherit_list.borrow();
+        let mut inherit_list = match inherit_list.var_type.clone() {
+            VarType::Inherits(list) => list,
+            _ => unreachable!(),
+        };
+
+        let global_table = get_global_table(node).unwrap();
+
+        // Add inherited classes to the table
+        for inherit in inherit_list.clone() {
+            let other_class = global_table.get(&inherit).ok_or_else(|| {
+                CompilerError::new(
+                    format!("Class '{}' not found!", inherit),
+                    node_ref.token.clone(),
+                )
+            })?;
+
+            table.insert(format!("_in_{inherit}"), other_class.clone());
         }
 
-        // Reset the offset counter
-        self.offset.store(BASE_OFFSET, Ordering::SeqCst);
-        Ok(())
-    }
+        while let Some(inherit) = inherit_list.pop() {
+            let other_class = global_table.get(&inherit).ok_or_else(|| {
+                CompilerError::new(
+                    format!("Class '{}' not found!", inherit),
+                    node_ref.token.clone(),
+                )
+            })?;
 
-    fn visit_class_members(&mut self, node: &CodeNode, members: Vec<CodeNode>) -> VisitorResult {
-        let node_ref = node.borrow();
-        let mut table_ref = node_ref.symbol_table.borrow_mut();
-        let table = table_ref.get_or_insert_with(Default::default);
+            let other_table = other_class.borrow();
+            let other_table = other_table.table.clone().ok_or_else(|| {
+                CompilerError::new(
+                    format!("Class '{}' does not have a symbol table!", inherit),
+                    node_ref.token.clone(),
+                )
+            })?;
 
-        for member in members {
-            let res: Result<(usize, String, VarType), CompilerError> = match member.borrow().value {
-                NodeValue::Tree(TreeNode::Attribute()) => {
-                    let mut children = member.children();
-                    let _visibility: Type = children.next().unwrap().try_into()?;
-                    let id: Type = children.next().unwrap().try_into()?;
-
-                    let id = if let Type::Id(n) = id {
-                        n
-                    } else {
-                        return Err(CompilerError::new(
-                            format!("Expected identifier at '{}'!", node_ref.value),
-                            node_ref.token.clone(),
-                        )
-                        .into());
-                    };
-
-                    let type_: Type = children.next().unwrap().try_into()?;
-
-                    let indices = children
-                        .next()
-                        .unwrap()
-                        .children()
-                        .map(|num| -> Result<usize, CompilerError> {
-                            if let NodeValue::Leaf(Type::IntNum(n)) = &num.borrow().value {
-                                usize::try_from(*n).map_err(|_| {
-                                    CompilerError::new(
-                                        "Expected usize!".to_string(),
-                                        num.borrow().token.clone(),
-                                    )
-                                })
-                            } else {
-                                Err(CompilerError::new(
-                                    "Expected number!".to_string(),
-                                    num.borrow().token.clone(),
-                                ))
-                            }
-                        })
-                        .collect::<Result<Vec<_>, _>>()?;
-
-                    let indice_mult: usize = indices.iter().product();
-                    let size = get_type_size(&type_) * indice_mult.max(1);
-
-                    let var_type = if type_ == Type::Integer {
-                        VarType::Integer(indices)
-                    } else if type_ == Type::Float {
-                        VarType::Float(indices)
-                    } else {
-                        match type_ {
-                            Type::Id(class_name) => VarType::Class(class_name),
-                            _ => {
-                                return Err(CompilerError::new(
-                                    format!("Expected class identifier at '{}'!", node_ref.value),
-                                    node_ref.token.clone(),
-                                )
-                                .into());
-                            }
-                        }
-                    };
-
-                    Ok((size, id, var_type))
-                }
-                NodeValue::Tree(TreeNode::ConstructorFunc()) => {
-                    let mut children = member.children();
-                    let _visibility: Type = children.next().unwrap().try_into()?;
-                    let id: Type = children.next().unwrap().try_into()?;
-                    let _param_list: Vec<String> = children
-                        .next()
-                        .unwrap()
-                        .children()
-                        .map(|c| {
-                            let mut children = c.children();
-                            let type_: Type = children.nth(1).unwrap().try_into()?;
-                            let indices = children.next().unwrap().children().count();
-
-                            Ok(format!("{}[{}]", type_, indices))
-                        })
-                        .collect::<Result<Vec<_>, CompilerError>>()?;
-
-                    Ok((0, id.to_string(), VarType::Function))
-                }
-                NodeValue::Tree(TreeNode::MemberFunc()) => {
-                    let mut children = member.children();
-                    let _visibility: Type = children.next().unwrap().try_into()?;
-                    let id: Type = children.next().unwrap().try_into()?;
-                    let id = if let Type::Id(n) = id {
-                        n
-                    } else {
-                        return Err(CompilerError::new(
-                            format!("Expected identifier at '{}'!", node_ref.value),
-                            node_ref.token.clone(),
-                        )
-                        .into());
-                    };
-                    let _param_list: Vec<String> = children
-                        .next()
-                        .unwrap()
-                        .children()
-                        .map(|c| {
-                            let mut children = c.children();
-                            let type_: Type = children.nth(1).unwrap().try_into()?;
-                            let indices = children.next().unwrap().children().count();
-
-                            Ok(format!("{}[{}]", type_, indices))
-                        })
-                        .collect::<Result<Vec<_>, CompilerError>>()?;
-                    let _return_type: Type = children.next().unwrap().try_into()?;
-
-                    Ok((0, id, VarType::Function))
-                }
-                _ => {
-                    return Err(CompilerError::new(
-                        format!(
-                            "Expected Attribute, ConstructorFunc, or MemberFunc at '{}'!",
-                            member.borrow().value,
-                        ),
-                        member.borrow().token.clone(),
+            let other_type = other_table
+                .get("_inherits")
+                .ok_or_else(|| {
+                    CompilerError::new(
+                        format!("Class '{}' does not have an inherit list!", inherit),
+                        node_ref.token.clone(),
                     )
-                    .into())
-                }
+                })?
+                .borrow()
+                .var_type
+                .clone();
+
+            let other_list = match other_type {
+                VarType::Inherits(table) => table,
+                _ => unreachable!(),
             };
 
-            let (size, key, var_type) = res?;
-            table.insert(
-                key,
-                Rc::new(RefCell::new(SymbolData::new(size, 0, var_type))),
-            );
+            if other_list.contains(&class_name) {
+                return Err(CompilerError::new(
+                    format!(
+                        "Circular inheritance detected! Class '{class_name}' inherits from itself!",
+                    ),
+                    node_ref.token.clone(),
+                )
+                .into());
+            }
+
+            inherit_list.extend(other_list);
         }
 
         Ok(())

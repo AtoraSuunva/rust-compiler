@@ -80,6 +80,16 @@ impl Visitor for SymbolCollectorVisitor {
 
         let size = table.values().fold(0, |acc, x| acc + x.borrow().size);
 
+        table.insert(
+            "..".to_string(),
+            Rc::new(RefCell::new(SymbolData::new_with_table(
+                0,
+                0,
+                VarType::Global,
+                self.global.clone(),
+            ))),
+        );
+
         // Then add the class to the global table:
         self.global.insert(
             class_name.clone(),
@@ -171,13 +181,36 @@ impl Visitor for SymbolCollectorVisitor {
             }
         }
 
+        let head_id_node = head.children().next().unwrap();
+
+        let (var_type, parent_table) =
+            if let NodeValue::Tree(TreeNode::Scope()) = head_id_node.borrow().value.clone() {
+                let scope_id = head_id_node.children().next().unwrap();
+                let scope_id = match scope_id.borrow().value.clone() {
+                    NodeValue::Leaf(Type::Id(id)) => id,
+                    _ => {
+                        return Err(CompilerError::new(
+                            format!("Expected identifier at '{}'!", node.borrow().value),
+                            node.borrow().token.clone(),
+                        )
+                        .into())
+                    }
+                };
+
+                let var_data = self.global.get(&scope_id).unwrap();
+                let var_type = VarType::Class(scope_id);
+                (var_type, var_data.borrow().clone().table.unwrap())
+            } else {
+                (VarType::Global, self.global.clone())
+            };
+
         table.insert(
             "..".to_string(),
             Rc::new(RefCell::new(SymbolData::new_with_table(
                 0,
                 0,
-                VarType::Global,
-                self.global.clone(),
+                var_type,
+                parent_table,
             ))),
         );
 
